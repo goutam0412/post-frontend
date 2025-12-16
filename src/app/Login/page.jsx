@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import axios from 'axios'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -12,49 +13,42 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null) 
 
-  const router = useRouter()
+const router = useRouter() 
 
-  const handleSubmit = async () => {
-    setError(null) 
+const handleSubmit = async () => {
+  setError(null)
 
-    if (!email || !password) {
-      alert('Please fill in both email and password.')
-      return
-    }
-
-    setIsLoading(true)
-
-    
-    await new Promise(resolve => setTimeout(resolve, 1500)); 
-
-    try {
-      if (email === 'test@example.com' && password === 'password') {
-        const fakeToken = 'static_dummy_auth_token_1234567890'
-        const fakeData = { user: { id: 1, email: email } }
-
-        console.log('Login successful (Static Simulation):', fakeData)
-        
-        // Token store karna (jo Posts component mein zaroori hai)
-        localStorage.setItem('token', fakeToken)
-        console.log('✅ Static Token saved:', fakeToken)
-        
-        // User ko Dashboard par bhej do
-        router.push('/Dashboard')
-
-      } else {
-        // Failed Login Simulation
-        const errorMessage = 'Invalid static credentials. Try test@example.com / password.'
-        setError(errorMessage)
-        alert(errorMessage)
-      }
-
-    } catch (error) {
-      console.error('Login error (Static):', error)
-      setError('Login failed (Static Error). Please check console.')
-    } finally {
-      setIsLoading(false)
-    }
+  if (!email || !password) {
+    setError("Email and password are required")
+    return
   }
+
+  setIsLoading(true)
+
+  try {
+    const res = await axios.post("http://localhost:5000/api/auth/login", {
+      email,
+      password,
+    })
+
+    const { token, user } = res.data
+
+    localStorage.setItem("token", token)
+
+    router.push("/Dashboard")
+
+  } catch (err) {
+    console.error(err)
+
+    if (err.response?.data?.message) {
+      setError(err.response.data.message)
+    } else {
+      setError("Login failed. Server error.")
+    }
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   return (
     <div className='min-h-screen bg-gray-100 flex items-center justify-center p-8'>

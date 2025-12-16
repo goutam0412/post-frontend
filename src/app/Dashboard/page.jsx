@@ -100,27 +100,13 @@ export default function ImpozitionsDashboard() {
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('authToken')
-      const res = await fetch('http://localhost:3001/users/sign_out', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token,
-        },
-      })
-  
-      if (res.ok) {
-        localStorage.removeItem('authToken')
-        router.push('/Login')
-      } else {
-        console.error('Logout failed:', await res.json())
-        alert('Logout failed')
-      }
+      localStorage.removeItem("token");
+      router.push('/Login')
     } catch (error) {
-      console.error('Error during logout:', error)
-      alert('Logout error')
+      console.error("Error during logout:", error);
+      alert("Logout error");
     }
-  }
+  };
 
   // const getRecentPosts = () => posts.sort((a, b) => b.id - a.id).slice(0, 2)
 
