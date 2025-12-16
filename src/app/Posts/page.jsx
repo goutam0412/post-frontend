@@ -16,6 +16,7 @@ import SideBar from '@/components/SideBar'
 import Header from '@/components/Header'
 import CreatePostModal from '@/components/CreatePostModal'
 import PostPreviewModal from '@/components/PostPreviewModal'
+import axios from 'axios'
 
 const STATIC_POSTS = [
   {
@@ -67,8 +68,8 @@ export default function PostsContent() {
   const formatPostData = (post) => ({
     ...post,
     id: post.id,
-    title: post.caption || 'No Caption',
-    description: post.hashtags || 'No Hashtags',
+    title: post.title || 'No Caption',
+    description: post.content || 'No Hashtags',
     image: post.image_url,
     createdAt: post.created_at,
     campaign_id: post.campaign_id,
@@ -78,22 +79,42 @@ export default function PostsContent() {
   })
 
   useEffect(() => {
-    setLoading(true)
     setError(null)
-    
-    const loadStaticPosts = setTimeout(() => {
-      const formatted = STATIC_POSTS.map(formatPostData)
-      setPosts(formatted)
-      setFilteredPosts(formatted)
-      setLoading(false)
-    }, 500) 
+    getPost()
+    // const loadStaticPosts = setTimeout(() => {
+    //   const formatted = STATIC_POSTS.map(formatPostData)
+    //   setPosts(formatted)
+    //   setFilteredPosts(formatted)
+    //   setLoading(false)
+    // }, 500) 
 
-    return () => clearTimeout(loadStaticPosts)
+    // return () => clearTimeout(loadStaticPosts)
   }, [])
 
   useEffect(() => {
     handleSearch(searchQuery)
   }, [posts, searchQuery])
+
+  const getPost = async () => {
+    const token = localStorage.getItem("token");
+    setLoading(true);
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/posts", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const formated = data.data.map((item) => formatPostData(item))
+
+      setPosts(formated);
+      setFilteredPosts(formated);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query)
@@ -122,26 +143,32 @@ export default function PostsContent() {
         alert('Please provide caption, hashtags, and campaign_id.')
         return
       }
+
+      const token = localStorage.getItem('token')
       
       const newId = Math.max(...posts.map(p => p.id), 0) + 1;
       
       const newPost = {
-        id: newId,
-        caption: postData.caption,
-        hashtags: postData.hashtags,
-        image_url: postData.image_url || null,
-        created_at: new Date().toISOString(),
+        title: postData.hashtags, 
+        content: postData.caption, 
+        image: postData.image_url || null, 
         campaign_id: postData.campaign_id,
         ai_score: postData.ai_score,
-      }
-  
-      const formattedNewPost = formatPostData(newPost)
+        status: "published", 
+      };
 
-      // Local state update
-      setPosts((prev) => [formattedNewPost, ...prev])
-      setFilteredPosts((prev) => [formattedNewPost, ...prev])
-  
-      alert('✅ Post created successfully (Static)!')
+     await axios.post(
+      "http://localhost:5000/api/posts",
+      newPost, 
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+      getPost()
+      
       closeModal()
     } catch (err) {
       console.error('Error creating post locally:', err)
@@ -149,32 +176,62 @@ export default function PostsContent() {
     }
   }
   
-  const updatePost = (id, postData) => {
-    console.log(`Updating post ID ${id} locally...`)
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.id === id
-          ? formatPostData({
-              ...post,
-              caption: postData.caption,
-              hashtags: postData.hashtags,
-              image_url: postData.image_url,
-              campaign_id: postData.campaign_id,
-              ai_score: postData.ai_score,
-            })
-          : post
-      )
-    )
-    alert('Post updated locally!')
-  }
+  const updatePost = async (id, postData) => {
+    try {
+      if (!postData.caption || !postData.hashtags || !postData.campaign_id) {
+        alert("Please provide caption, hashtags, and campaign_id.");
+        return;
+      }
 
-  const deletePost = (id) => {
-    if (confirm('Are you sure you want to delete this post?')) {
-      console.log(`Deleting post ID ${id} locally...`)
-      setPosts((prev) => prev.filter((post) => post.id !== id))
-      alert('Post deleted locally!')
+      const token = localStorage.getItem("token");
+
+      const newId = Math.max(...posts.map((p) => p.id), 0) + 1;
+
+      const newPost = {
+        title: postData.hashtags,
+        content: postData.caption,
+        image: postData.image_url || null,
+        campaign_id: postData.campaign_id,
+        ai_score: postData.ai_score,
+        status: "published",
+      };
+
+      await axios.put(`http://localhost:5000/api/posts/${id}`, newPost, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      getPost();
+
+      closeModal();
+    } catch (err) {
+      console.error("Error creating post locally:", err);
+      alert(`❌ Failed to create post locally: ${err.message}`);
     }
-  }
+  };
+
+  const deletePost = async (id) => {
+    if (confirm("Are you sure you want to delete this post?")) {
+    
+      const token = localStorage.getItem('token')
+
+      try {
+        await axios.delete(
+          `http://localhost:5000/api/posts/${id}`,
+
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        getPost()
+      } catch (error) {}
+      alert("Post deleted locally!");
+    }
+  };
 
   const editPost = (id) => {
     const post = posts.find((p) => p.id === id)
