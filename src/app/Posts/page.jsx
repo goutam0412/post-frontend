@@ -55,30 +55,31 @@ export default function PostsContent() {
   const savePost = async (postData) => {
     try {
       const token = localStorage.getItem('token'); 
-  
       const response = await fetch('http://localhost:3001/api/v1/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'token': `Bearer ${token}` 
         },
         body: JSON.stringify({ post: postData }),
       });
+      console.log("token", token)
   
       if (response.ok) {
         alert('Post Created Successfully!');
         fetchPosts();
         setShowCreateModal(false);
       } else {
-        const errorData = await response.json();
-        console.error('Server Error:', errorData);
-        alert('Error: ' + (errorData.error || 'Check console'));  
+        // 500 error ke case mein response.json() shayad crash kare, isliye text() use karein
+        const errorText = await response.text();
+        console.error('Full Server Error:', errorText);
+        alert('Server Error! Check console for full log.');
       }
     } catch (err) {
       console.error('Network Error:', err);
     }
-  };  
+  };
 
   const updatePost = async (id, postData) => {
     try {

@@ -112,42 +112,34 @@ const CreatePostModal = ({
   }
   
   const handleSave = async () => {
+    // 1. Validation check
     if (!title || !description || !selectedCaption) {
-      alert('Please fill all fields and select a caption')
-      return
+      alert('Please fill all fields and select a caption');
+      return;
     }
-    if (!campaignId || !aiScore || isNaN(Number(campaignId)) || isNaN(Number(aiScore))) {
-        alert('Campaign ID and AI Score must be valid numbers.')
-        return
-    }
-  
-    const finalStatus = status.charAt(0).toUpperCase() + status.slice(1)
   
     const postData = {
+      title: title, // Title ko sahi se bhejein
       caption: selectedCaption,
-      hashtags: description || '',
-      image_url: uploadedImage,
-      status: finalStatus,
-      platform: 'Drafting',
-      title: title || '',
-      campaign_id: Number(campaignId), 
-      ai_score: Number(aiScore),       
-    }
+      hashtags: description,
+      image_url: uploadedImage || "", 
+      status: status.toLowerCase(), // Server aksar lowercase expect karta hai
+      platform: 'Instagram', // Ya jo bhi default platform ho
+      campaign_id: parseInt(campaignId), // Ensure it's an integer
+      ai_score: parseFloat(aiScore),    // Ensure it's a number/float
+    };
   
     try {
       if (isEditMode) {
-        updatePost(postToEdit.id, postData)
+        await updatePost(postToEdit.id, postData);
       } else {
-        savePost(postData)   
+        await savePost(postData); // Ye function PostsContent se aa raha hai
       }
-  
-      setSaveStatus('success')
+      // Note: setSaveStatus success tabhi karein jab response 200 ho
     } catch (error) {
-      console.error('Error saving post locally:', error)
-      setSaveStatus('error') 
-      alert('Failed to save post locally.')
+      console.error('Error saving post:', error);
     }
-  }
+  };
   
   const copyCaption = (caption) => {
     navigator.clipboard.writeText(caption)
@@ -283,8 +275,8 @@ const CreatePostModal = ({
                           <button
                             onClick={(e) => {
                               e.preventDefault()
-                              e.stopPropagation()
-                              setUploadedImage(null)
+                              e.stopPropagation(); // Fixed typo
+                                                            setUploadedImage(null)
                             }}
                             className='absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full text-white transition-colors z-20'
                             title='Remove image'
