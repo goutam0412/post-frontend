@@ -24,11 +24,52 @@ export default function SignUpPage() {
     })
   }
 
+  const handleSubmit = async () => {
+    if (!agreeTerms) {
+      alert('You must agree to the terms and conditions.')
+      return
+    }
+  
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match.')
+      return
+    }
+  
+    setIsLoading(true)
+  
+    try {
+      const res = await fetch("http://localhost:3000/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user: {
+            email: formData.email,
+            password: formData.password,
+            password_confirmation: formData.confirmPassword,
+          },
+        }),
+      });
 
- const handleSubmit = async () => {
-  if (!agreeTerms) {
-    alert('You must agree to the terms and conditions.')
-    return
+      const data = await res.json();
+
+      if (res.ok) {
+        const token = res.headers.get("Authorization") || data.token;
+        localStorage.setItem("authToken", token);
+
+        router.push("/Dashboard");
+      }
+
+      console.log("User created:", data);
+
+      router.push("/Dashboard");
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   if (formData.password !== formData.confirmPassword) {

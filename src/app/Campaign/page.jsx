@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from "react";
 import {
   List,
   Calendar,
@@ -13,73 +13,67 @@ import {
   Trash2,
   BarChart,
   Users,
-} from 'lucide-react'
-import SideBar from '@/components/SideBar'
-import Header from '@/components/Header'
-import CreateCampaignModal from '@/components/CreateCampaignModal'
-import CampaignPreviewModal from '@/components/CampaignPreviewModal'
+} from "lucide-react";
+import SideBar from "@/components/SideBar";
+import Header from "@/components/Header";
+import CreateCampaignModal from "@/components/CreateCampaignModal";
+import CampaignPreviewModal from "@/components/CampaignPreviewModal";
+import axios from "axios";
 
 const statusMap = {
-  Running: { icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
-  Scheduled: { icon: Clock, color: 'text-blue-600', bg: 'bg-blue-100' },
-  Draft: { icon: AlertCircle, color: 'text-gray-600', bg: 'bg-gray-100' },
-}
+  Running: { icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
+  Scheduled: { icon: Clock, color: "text-blue-600", bg: "bg-blue-100" },
+  Draft: { icon: AlertCircle, color: "text-gray-600", bg: "bg-gray-100" },
+};
 
 export default function CampaignsContent() {
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [campaignToEdit, setCampaignToEdit] = useState(null)
-  const [showCampaignModal, setShowCampaignModal] = useState(false)
-  const [previewCampaignData, setPreviewCampaignData] = useState(null)
-  const [campaigns, setCampaigns] = useState([])
-  const [filteredCampaigns, setFilteredCampaigns] = useState([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(null)
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [campaignToEdit, setCampaignToEdit] = useState(null);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [previewCampaignData, setPreviewCampaignData] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
+  const [filteredCampaigns, setFilteredCampaigns] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState(null);
 
-  // Get token only on client
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    setToken(storedToken)
-  }, [])
+    fetchCampaigns();
+  }, []);
 
   const fetchCampaigns = useCallback(async () => {
-    if (!token) return // wait for token
-
-    setLoading(true)
+    const token = localStorage.getItem("token");
+    setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/v1/campaigns', {
-        method: 'GET',
+      const res = await fetch("http://localhost:3000/api/v1/campaigns", {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
+          token: `Bearer ${token}`,
         },
-      })
+      });
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
-      const data = await res.json()
-      const campaignsData = data?.campaigns || []
-      setCampaigns(campaignsData)
-      setFilteredCampaigns(campaignsData)
-      console.log('Fetched campaigns:', campaignsData)
+      const data = await res.json();
+      const campaignsData = data?.campaigns || [];
+      setCampaigns(campaignsData);
+      setFilteredCampaigns(campaignsData);
+      console.log("Fetched campaigns:", campaignsData);
     } catch (err) {
-      console.error('Error fetching campaigns:', err)
-      setCampaigns([])
-      setFilteredCampaigns([])
+      console.error("Error fetching campaigns:", err);
+      setCampaigns([]);
+      setFilteredCampaigns([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [token])
-
-  useEffect(() => {
-    fetchCampaigns()
-  }, [fetchCampaigns])
+  }, [token]);
 
   const handleSearch = (query) => {
-    setSearchQuery(query)
+    setSearchQuery(query);
     if (!query.trim()) {
-      setFilteredCampaigns(campaigns)
+      setFilteredCampaigns(campaigns);
     } else {
-      const lower = query.toLowerCase()
+      const lower = query.toLowerCase();
       setFilteredCampaigns(
         campaigns.filter(
           (camp) =>
@@ -88,150 +82,229 @@ export default function CampaignsContent() {
             camp.audience?.toLowerCase().includes(lower) ||
             camp.status?.toLowerCase().includes(lower)
         )
-      )
+      );
     }
-  }
+  };
 
-  const handleSaveCampaign = (newCampaignData) => {
+  const handleSaveCampaign = async (newCampaignData) => {
     const newCampaign = {
-      id: Date.now(),
       name: newCampaignData.campaignName,
-      postTitle: newCampaignData.selectedPost?.title || '',
+      postTitle: newCampaignData.selectedPost?.title || "",
       budget: newCampaignData.budget,
       schedule: newCampaignData.schedule,
       audience: `${newCampaignData.location}, ${newCampaignData.age}, ${newCampaignData.interests}`,
-      status: newCampaignData.status || 'Draft',
-      platform: 'Facebook/Instagram',
+      status: newCampaignData.status || "Draft",
+      platform: "Facebook/Instagram",
       createdAt: new Date().toLocaleDateString(),
+    };
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/api/v1/campaigns",
+        {
+          campaign: {
+            business_profile_id: 1, 
+            title: newCampaignData.campaignName,
+            budget: newCampaignData.budget,
+            schedule: newCampaignData.schedule,
+            status: null,
+            platform: "facebook",
+            audience: {
+              location: newCampaignData.location,
+              age: newCampaignData.age,
+              interests: newCampaignData.interests,
+            },
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      fetchCampaigns()
+      console.log("Campaign created:", response.data);
+    } catch (error) {
+      console.error(
+        "Create campaign error:",
+        error.response?.data || error.message
+      );
+    } finally {
+      setShowCreateModal(false);
     }
-    setCampaigns((prev) => [newCampaign, ...prev])
-    setFilteredCampaigns((prev) => [newCampaign, ...prev])
-    setShowCreateModal(false)
-  }
+
+    // setCampaigns((prev) => [newCampaign, ...prev])
+    // setFilteredCampaigns((prev) => [newCampaign, ...prev])
+  };
 
   const handleUpdateCampaign = (updatedData) => {
     const updatedCampaigns = campaigns.map((camp) =>
       camp.id === updatedData.id
         ? { ...camp, ...updatedData, status: updatedData.status || camp.status }
         : camp
-    )
-    setCampaigns(updatedCampaigns)
-    setFilteredCampaigns(updatedCampaigns)
-    setShowCreateModal(false)
-  }
+    );
+    setCampaigns(updatedCampaigns);
+    setFilteredCampaigns(updatedCampaigns);
+    setShowCreateModal(false);
+  };
 
   const deleteCampaign = (id) => {
-    if (confirm('Are you sure you want to delete this campaign?')) {
-      const updatedCampaigns = campaigns.filter((camp) => camp.id !== id)
-      setCampaigns(updatedCampaigns)
-      setFilteredCampaigns(updatedCampaigns)
+    if (confirm("Are you sure you want to delete this campaign?")) {
+      const updatedCampaigns = campaigns.filter((camp) => camp.id !== id);
+      setCampaigns(updatedCampaigns);
+      setFilteredCampaigns(updatedCampaigns);
     }
-  }
+  };
 
   const editCampaign = (id) => {
-    const campaign = campaigns.find((c) => c.id === id)
+    const campaign = campaigns.find((c) => c.id === id);
     if (campaign) {
-      setCampaignToEdit(campaign)
-      setShowCreateModal(true)
+      setCampaignToEdit(campaign);
+      setShowCreateModal(true);
     }
-  }
+  };
 
   const previewCampaign = (campaign) => {
-    setPreviewCampaignData(campaign)
-    setShowCampaignModal(true)
-  }
+    setPreviewCampaignData(campaign);
+    setShowCampaignModal(true);
+  };
 
   return (
-    <div className='flex h-screen' style={{ background: '#f2f0fe' }}>
+    <div className="flex h-screen" style={{ background: "#f2f0fe" }}>
       <SideBar />
-      <div className='flex-1 overflow-auto'>
-        <Header title='My Campaigns' onSearch={handleSearch} />
+      <div className="flex-1 overflow-auto">
+        <Header title="My Campaigns" onSearch={handleSearch} />
 
-        <div className='p-8'>
-          <div className='bg-white shadow-lg'>
-            <div className='p-6 border-b border-gray-100 flex justify-between items-center'>
+        <div className="p-8">
+          <div className="bg-white shadow-lg">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <div>
-                <h2 className='text-2xl font-bold text-gray-800'>Campaign Management</h2>
-                <p className='text-sm text-gray-500 mt-1'>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Campaign Management
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Monitor and manage all your paid ad campaigns.
                 </p>
               </div>
               <button
-                onClick={() => { setCampaignToEdit(null); setShowCreateModal(true) }}
-                className='flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-semibold hover:shadow-xl'
-                style={{ backgroundColor: '#bbb5ed', color: '#000' }}
+                onClick={() => {
+                  setCampaignToEdit(null);
+                  setShowCreateModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-semibold hover:shadow-xl"
+                style={{ backgroundColor: "#bbb5ed", color: "#000" }}
               >
-                <Plus className='w-5 h-5' /> Create Campaign
+                <Plus className="w-5 h-5" /> Create Campaign
               </button>
             </div>
 
             {loading ? (
-              <div className='p-12 text-center'>Loading campaigns...</div>
+              <div className="p-12 text-center">Loading campaigns...</div>
             ) : filteredCampaigns.length === 0 ? (
-              <div className='p-12 text-center'>
-                <TrendingUp className='w-16 h-16 text-gray-300 mx-auto mb-4' />
-                <h3 className='text-xl font-semibold text-gray-800 mb-2'>No Campaigns Running</h3>
-                <p className='text-gray-600 mb-6'>
+              <div className="p-12 text-center">
+                <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  No Campaigns Running
+                </h3>
+                <p className="text-gray-600 mb-6">
                   Launch your first ad campaign to start generating results.
                 </p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className='px-6 py-3 rounded-lg text-white font-medium hover:shadow-lg'
-                  style={{ backgroundColor: '#7c3aed' }}
+                  className="px-6 py-3 rounded-lg text-white font-medium hover:shadow-lg"
+                  style={{ backgroundColor: "#7c3aed" }}
                 >
                   Create Campaign
                 </button>
               </div>
             ) : (
-              <div className='overflow-x-auto'>
-                <table className='min-w-full divide-y divide-gray-200'>
-                  <thead className='bg-gray-50'>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Campaign / Post</th>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Budget / Schedule</th>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Audience</th>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Status</th>
-                      <th className='px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Campaign / Post
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Budget / Schedule
+                      </th>
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Audience
+                      </th> */}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className='bg-white divide-y divide-gray-100'>
+                  <tbody className="bg-white divide-y divide-gray-100">
                     {filteredCampaigns.map((camp) => {
-                      const campStatus = statusMap[camp.status] || statusMap['Draft']
-                      const StatusIcon = campStatus.icon
+                      const campStatus =
+                        statusMap[camp.status] || statusMap["Draft"];
+                      const StatusIcon = campStatus.icon;
                       return (
-                        <tr key={camp.id} className='hover:bg-purple-50 transition-colors'>
-                          <td className='px-6 py-4 whitespace-nowrap max-w-sm'>
-                            <div className='text-sm font-semibold text-gray-900 truncate'>{camp.name}</div>
-                            <div className='text-xs text-gray-500 truncate'>Post: {camp.postTitle}</div>
-                          </td>
-                          <td className='px-6 py-4 whitespace-nowrap'>
-                            <div className='text-sm text-gray-800 flex items-center gap-1'>
-                              <BarChart className='w-4 h-4 text-purple-600' /> ${camp.budget}
+                        <tr
+                          key={camp.id}
+                          className="hover:bg-purple-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap max-w-sm">
+                            <div className="text-sm font-semibold text-gray-900 truncate">
+                              {camp.title}
                             </div>
-                            <div className='text-xs text-gray-500 flex items-center gap-1 mt-1'>
-                              <Calendar className='w-3 h-3' /> {camp.schedule?.split(' to ')[0]}...
+                            <div className="text-xs text-gray-500 truncate">
+                              Post: {camp.postTitle}
                             </div>
                           </td>
-                          <td className='px-6 py-4 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis'>
-                            <span className='text-sm text-gray-700 flex items-center gap-1'>
-                              <Users className='w-4 h-4 text-teal-600' /> {camp.audience}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-800 flex items-center gap-1">
+                              <BarChart className="w-4 h-4 text-purple-600" /> $
+                              {camp.budget}
+                            </div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                              <Calendar className="w-3 h-3" />{" "}
+                              {camp.schedule?.split(" to ")[0]}...
+                            </div>
+                          </td>
+                          {/* <td className="px-6 py-4 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis">
+                            <span className="text-sm text-gray-700 flex items-center gap-1">
+                              <Users className="w-4 h-4 text-teal-600" />{" "}
+                              {camp.audience}
                             </span>
-                          </td>
-                          <td className='px-6 py-4 whitespace-nowrap'>
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${campStatus.bg} ${campStatus.color}`}>
-                              <StatusIcon className='w-3 h-3 mr-1.5' />
+                          </td> */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${campStatus.bg} ${campStatus.color}`}
+                            >
+                              <StatusIcon className="w-3 h-3 mr-1.5" />
                               {camp.status}
                             </span>
                           </td>
-                          <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium'>
-                            <div className='flex items-center justify-center space-x-2'>
-                              <button onClick={() => previewCampaign(camp)} className='p-2 text-gray-500 hover:text-gray-800'><Eye className='w-4 h-4' /></button>
-                              <button onClick={() => editCampaign(camp.id)} className='p-2 text-gray-500 hover:text-gray-800'><Edit3 className='w-4 h-4' /></button>
-                              <button onClick={() => deleteCampaign(camp.id)} className='p-2 text-gray-500 hover:text-gray-800'><Trash2 className='w-4 h-4' /></button>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-center space-x-2">
+                              <button
+                                onClick={() => previewCampaign(camp)}
+                                className="p-2 text-gray-500 hover:text-gray-800"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => editCampaign(camp.id)}
+                                className="p-2 text-gray-500 hover:text-gray-800"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteCampaign(camp.id)}
+                                className="p-2 text-gray-500 hover:text-gray-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </td>
                         </tr>
-                      )
+                      );
                     })}
                   </tbody>
                 </table>
@@ -244,8 +317,9 @@ export default function CampaignsContent() {
       {showCreateModal && (
         <CreateCampaignModal
           onClose={() => setShowCreateModal(false)}
-          onSave={campaignToEdit ? handleUpdateCampaign : handleSaveCampaign}
+          onSave={handleSaveCampaign}
           campaignData={campaignToEdit}
+          showModal
         />
       )}
 
@@ -256,5 +330,5 @@ export default function CampaignsContent() {
         />
       )}
     </div>
-  )
+  );
 }
