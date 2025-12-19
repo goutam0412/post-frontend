@@ -24,53 +24,58 @@ export default function SignUpPage() {
     })
   }
 
-  const handleSubmit = async () => {
-    if (!agreeTerms) {
-      alert('You must agree to the terms and conditions.')
-      return
-    }
-  
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match.')
-      return
-    }
-  
-    setIsLoading(true)
-  
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          
-            name: formData.fullName,
-            email: formData.email,
-            password: formData.password,
-            password_confirmation: formData.confirmPassword,
-        }),
-      })
-  
-      const data = await res.json()
-  
-        if (res.ok) {
-      const token = res.headers.get('Authorization') || data.token
-      localStorage.setItem('authToken', token)
-      
-      router.push('/Dashboard')
-    }
-  
-      console.log('User created:', data)
-  
-      router.push('/Dashboard')
-    } catch (error) {
-      console.error('Signup error:', error)
-      alert('Something went wrong. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+
+ const handleSubmit = async () => {
+  if (!agreeTerms) {
+    alert('You must agree to the terms and conditions.')
+    return
   }
+
+  if (formData.password !== formData.confirmPassword) {
+    alert('Passwords do not match.')
+    return
+  }
+
+  setIsLoading(true)
+
+  try {
+    const res = await fetch('http://localhost:3001/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json' 
+      },
+      body: JSON.stringify({
+        user: {
+          name: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+        },
+      }),
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      const token = res.headers.get('Authorization')
+      if (token) {
+        localStorage.setItem('token', token)
+      }
+      
+      console.log('User created successfully:', data)
+      router.push('/Dashboard')
+    } else {
+      alert(data.message || 'Signup failed. Please check your details.')
+    }
+
+  } catch (error) {
+    console.error('Signup error:', error)
+    alert('Server connect nahi ho raha. Check if backend is running on 3001.')
+  } finally {
+    setIsLoading(false)
+  }
+}
   
 
   return (
