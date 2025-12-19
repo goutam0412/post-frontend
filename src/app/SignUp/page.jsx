@@ -92,7 +92,7 @@ export default function SignUpPage() {
           <p className='text-sm leading-relaxed mb-8'>
             Neque porro quisquam est qui dolorem
             <br />
-            ipsum quia dolor sit amet, consectetur,
+            ipsum quia dolor sit amet, consecteturs,
             <br />              
             adipisci velit...
           </p>
