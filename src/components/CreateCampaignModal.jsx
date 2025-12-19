@@ -49,8 +49,8 @@ const statusIcons = {
 
 const CreateCampaignModal = ({
   showModal,
-  closeModal,
-  saveCampaign,
+  onClose,
+  onSave,
   campaignToEdit,
   updateCampaign,
 }) => {
@@ -148,51 +148,75 @@ const CreateCampaignModal = ({
         audience: `${campaignData.location}, ${campaignData.age}, ${campaignData.interests}`,
       })
     } else {
-      saveCampaign(campaignData)
+        onSave(campaignData)
     }
 
-    closeModal()
+    onClose()
   }
 
   const renderStep1 = () => (
-    <div className='space-y-4'>
+    <div className="space-y-4">
       <input
-        type='text'
-        placeholder='Campaign Name (e.g., Q4 Product Promotion)'
+        type="text"
+        placeholder="Campaign Name (e.g., Q4 Product Promotion)"
         value={formData.campaignName}
         onChange={(e) =>
           setFormData({ ...formData, campaignName: e.target.value })
         }
-        className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500'
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500"
       />
-      <h3 className='text-md font-semibold text-gray-700 pt-2'>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Business Profile
+        </label>
+        <select
+          value={formData.businessProfileId}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              businessProfileId: e.target.value,
+            })
+          }
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
+                 focus:ring-2 focus:ring-purple-500 focus:outline-none
+                 text-gray-700"
+        >
+          <option value="" disabled>
+            Select Business Profile
+          </option>
+          <option value="1">My Test Business</option>
+          <option value="2">Jewellery Store</option>
+        </select>
+      </div>
+
+      <h3 className="text-md font-semibold text-gray-700 pt-2">
         Select Post to Promote
       </h3>
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {mockPosts.map((post) => (
           <div
             key={post.id}
             onClick={() => setFormData({ ...formData, selectedPost: post })}
             className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
               formData.selectedPost?.id === post.id
-                ? 'border-purple-600 bg-purple-50 shadow-md'
-                : 'border-gray-200 hover:border-purple-400'
+                ? "border-purple-600 bg-purple-50 shadow-md"
+                : "border-gray-200 hover:border-purple-400"
             }`}
           >
-            <div className='font-medium text-gray-800 flex items-center gap-2'>
+            <div className="font-medium text-gray-800 flex items-center gap-2">
               {formData.selectedPost?.id === post.id && (
-                <CheckCircle className='w-4 h-4 text-purple-600' />
+                <CheckCircle className="w-4 h-4 text-purple-600" />
               )}
               {post.title}
             </div>
-            <p className='text-sm text-gray-500 mt-1 truncate'>
+            <p className="text-sm text-gray-500 mt-1 truncate">
               {post.description}
             </p>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 
   const renderStep2 = () => (
     <div className='space-y-6'>
@@ -398,7 +422,7 @@ const CreateCampaignModal = ({
             {isEditMode ? 'Edit Campaign' : 'Create New Campaign'}
           </h2>
           <button
-            onClick={closeModal}
+            onClick={onClose}
             className='p-2 hover:bg-gray-100 rounded-lg transition-colors'
           >
             <X className='w-5 h-5 text-gray-600' />

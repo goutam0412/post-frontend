@@ -38,37 +38,37 @@ export default function SignUpPage() {
     setIsLoading(true)
   
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
+      const res = await fetch("http://localhost:3000/users", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          
-            name: formData.fullName,
+          user: {
             email: formData.email,
             password: formData.password,
             password_confirmation: formData.confirmPassword,
+          },
         }),
-      })
-  
-      const data = await res.json()
-  
-        if (res.ok) {
-      const token = res.headers.get('Authorization') || data.token
-      localStorage.setItem('authToken', token)
-      
-      router.push('/Dashboard')
-    }
-  
-      console.log('User created:', data)
-  
-      router.push('/Dashboard')
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const token = res.headers.get("Authorization") || data.token;
+        localStorage.setItem("authToken", token);
+
+        router.push("/Dashboard");
+      }
+
+      console.log("User created:", data);
+
+      router.push("/Dashboard");
     } catch (error) {
-      console.error('Signup error:', error)
-      alert('Something went wrong. Please try again.')
+      console.error("Signup error:", error);
+      alert("Something went wrong. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
   

@@ -26,27 +26,28 @@ const handleSubmit = async () => {
   setIsLoading(true)
 
   try {
-    const res = await axios.post("http://localhost:5000/api/auth/login", {
-      email,
-      password,
-    })
+    const res = await axios.post("http://localhost:3000/users/sign_in", {
+      user: {
+        email: email,
+        password: password,
+      },
+    });
+    console.log(res, 'res')
+    const { token, user } = res.data;
+    
+    localStorage.setItem("token", res.headers.authorization);
 
-    const { token, user } = res.data
-
-    localStorage.setItem("token", token)
-
-    router.push("/Dashboard")
-
+    router.push("/Dashboard");
   } catch (err) {
-    console.error(err)
+    console.error(err);
 
     if (err.response?.data?.message) {
-      setError(err.response.data.message)
+      setError(err.response.data.message);
     } else {
-      setError("Login failed. Server error.")
+      setError("Login failed. Server error.");
     }
   } finally {
-    setIsLoading(false)
+    setIsLoading(false);
   }
 }
 
