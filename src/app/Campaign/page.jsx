@@ -45,7 +45,7 @@ export default function CampaignsContent() {
     const token = localStorage.getItem("token");
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/v1/campaigns", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`, {
         method: "GET",
         headers: {
           token: `Bearer ${token}`,
@@ -100,7 +100,7 @@ export default function CampaignsContent() {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/v1/campaigns",
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`,
         {
           campaign: {
             business_profile_id: 1, 

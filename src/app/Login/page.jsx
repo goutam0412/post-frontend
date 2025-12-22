@@ -25,7 +25,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3001/users/sign_in', { 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/users/sign_in`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

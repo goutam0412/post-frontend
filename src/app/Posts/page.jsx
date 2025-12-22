@@ -35,7 +35,7 @@ export default function PostsContent() {
   const fetchPosts = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3001/api/v1/posts')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts`)
       if (!response.ok) throw new Error('Failed to get data!')
       
       const data = await response.json()
@@ -55,7 +55,7 @@ export default function PostsContent() {
   const savePost = async (postData) => {
     try {
       const token = localStorage.getItem('token'); 
-      const response = await fetch('http://localhost:3001/api/v1/posts', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export default function PostsContent() {
 
   const updatePost = async (id, postData) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/posts/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ post: postData }),
@@ -116,7 +116,7 @@ export default function PostsContent() {
  const deletePost = async (id) => {
     if (window.confirm('Are you sure you want to delete?')) {
       try {
-        const response = await fetch(`http://localhost:3001/api/v1/posts/${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts/${id}`, {
           method: 'DELETE',
           headers: { 'Accept': 'application/json' }
         })
