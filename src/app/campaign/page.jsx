@@ -61,6 +61,16 @@ export default function CampaignsContent() {
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`,
         {
           method: 'GET',
+      var urlString = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`;
+
+      if (campaignFiler.status !== "All") {
+        urlString += `?status=${campaignFiler.status}`;
+      }
+
+      const res = await fetch(
+        urlString,
+        {
+          method: "GET",
           headers: {
             token: `Bearer ${token}`,
           },
@@ -81,7 +91,7 @@ export default function CampaignsContent() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token , campaignFiler]);
 
   const handleSearch = (query) => {
     setSearchQuery(query)
@@ -167,7 +177,7 @@ export default function CampaignsContent() {
   }
 
   const editCampaign = (id) => {
-    const campaign = campaigns.find((c) => c.id === id)
+      const campaign = campaigns.find((c) => c.id === id)
     if (campaign) {
       setCampaignToEdit(campaign)
       setShowCreateModal(true)
