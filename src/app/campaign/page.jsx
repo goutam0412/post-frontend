@@ -178,7 +178,7 @@ export default function CampaignsContent() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Campaign Management
+                  CAMPAIGN MANAGEMENT
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Monitor and manage all your paid ad campaigns.
@@ -189,7 +189,7 @@ export default function CampaignsContent() {
                   setCampaignToEdit(null);
                   setShowCreateModal(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-semibold hover:shadow-xl"
+                className="flex items-center gap-2 px-4 py-2.5 text-white font-semibold hover:shadow-xl"
                 style={{ backgroundColor: "#bbb5ed", color: "#000" }}
               >
                 <Plus className="w-5 h-5" /> Create Campaign

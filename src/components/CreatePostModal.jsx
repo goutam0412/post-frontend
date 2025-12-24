@@ -10,21 +10,22 @@ import {
   Save,
   RefreshCw,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const CreatePostModal = ({
   showModal,
   closeModal,
   postToEdit,
   onSaveSuccess,
-  savePost, 
-  updatePost, 
+  savePost,
+  updatePost,
 }) => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [uploadedImage, setUploadedImage] = useState(null)
 
-  const [campaignId, setCampaignId] = useState(1) 
-  const [aiScore, setAiScore] = useState(4)       
+  const [campaignId, setCampaignId] = useState(1)
+  const [aiScore, setAiScore] = useState(4)
 
   const [generatedCaptions, setGeneratedCaptions] = useState([])
   const [isGenerating, setIsGenerating] = useState(false)
@@ -32,16 +33,24 @@ const CreatePostModal = ({
   const [saveStatus, setSaveStatus] = useState(null)
   const [status, setStatus] = useState('Draft')
 
+  const [errors, setErrors] = useState({})
+
   const isEditMode = !!postToEdit
+
+  const clearError = (field) => {
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }))
+    }
+  }
 
   useEffect(() => {
     if (isEditMode) {
       // setTitle(postonSaveSuccessToEdit.title || '')
       setDescription(postToEdit.description || '')
       setUploadedImage(postToEdit.image || null)
-      setSelectedCaption(postToEdit.title || '') 
+      setSelectedCaption(postToEdit.title || '')
       setGeneratedCaptions([postToEdit.title || ''])
-      
+
       setCampaignId(postToEdit.campaign_id ? Number(postToEdit.campaign_id) : 1)
       setAiScore(postToEdit.ai_score ? Number(postToEdit.ai_score) : 4)
 
@@ -55,12 +64,13 @@ const CreatePostModal = ({
       setUploadedImage(null)
       setSelectedCaption('')
       setGeneratedCaptions([])
-      
+
       setCampaignId(1)
       setAiScore(4)
 
       setStatus('Draft')
     }
+    setErrors({})
     setSaveStatus(null)
   }, [postToEdit, isEditMode, showModal])
 
@@ -69,7 +79,7 @@ const CreatePostModal = ({
       const timer = setTimeout(() => {
         setSaveStatus(null)
         if (saveStatus === 'success' && onSaveSuccess) {
-          onSaveSuccess() 
+          onSaveSuccess()
         }
       }, 3000)
       return () => clearTimeout(timer)
@@ -89,7 +99,7 @@ const CreatePostModal = ({
 
   const generateCaptions = () => {
     if (!title || !description) {
-      alert('Please enter both title and description')
+      toast.error('Please enter both title and description')
       return
     }
 
@@ -110,40 +120,49 @@ const CreatePostModal = ({
       if (isEditMode) setSelectedCaption('')
     }, 2000)
   }
-  
+
   const handleSave = async () => {
-    // 1. Validation check
-    if (!title || !description || !selectedCaption) {
-      alert('Please fill all fields and select a caption');
-      return;
+    setErrors({})
+    let validationErrors = {}
+    if (!title.trim()) validationErrors.title = 'Title is required'
+    if (!description.trim()) validationErrors.description = 'Description is required'
+    if (!campaignId || campaignId <= 0) validationErrors.campaignId = 'Invalid Campaign ID'
+    if (aiScore === '' || aiScore < 0 || aiScore > 10) validationErrors.aiScore = 'Score must be 0-10'
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      // toast.error('Please fix the errors')
+      return
     }
-  
+
     const postData = {
-      title: title, // Title ko sahi se bhejein
+      title: title,
       caption: selectedCaption,
       hashtags: description,
-      image_url: uploadedImage || "", 
-      status: status.toLowerCase(), // Server aksar lowercase expect karta hai
-      platform: 'Instagram', // Ya jo bhi default platform ho
-      campaign_id: parseInt(campaignId), // Ensure it's an integer
-      ai_score: parseFloat(aiScore),    // Ensure it's a number/float
-    };
-  
+      image_url: uploadedImage || '',
+      status: status.toLowerCase(),
+      platform: 'Instagram',
+      campaign_id: parseInt(campaignId),
+      ai_score: parseFloat(aiScore),
+    }
+
     try {
       if (isEditMode) {
-        await updatePost(postToEdit.id, postData);
+        await updatePost(postToEdit.id, postData)
+        toast.success('Post Updated Successfully')
       } else {
-        await savePost(postData); // Ye function PostsContent se aa raha hai
+        await savePost(postData)
+        // toast.success('Post Saved Successfully')
       }
-      // Note: setSaveStatus success tabhi karein jab response 200 ho
     } catch (error) {
-      console.error('Error saving post:', error);
+      console.error('Error saving post:', error)
+      toast.error('Failed to save post. Try again!')
     }
-  };
-  
+  }
+
   const copyCaption = (caption) => {
     navigator.clipboard.writeText(caption)
-    alert('Caption copied to clipboard!')
+    toast.success('Caption copied to clipboard!')
   }
 
   if (!showModal) return null
@@ -177,10 +196,11 @@ const CreatePostModal = ({
                   <input
                     type='text'
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
                     placeholder='Enter your post title...'
                     className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
                   />
+                  {errors.title && <p className='text-red-500 text-xs mt-1'>{errors.title}</p>}
                 </div>
 
                 <div>
@@ -189,36 +209,43 @@ const CreatePostModal = ({
                   </label>
                   <textarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => { setDescription(e.target.value); clearError('description'); }}
                     placeholder='Describe your post in detail...'
                     className='w-full h-32 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-gray-800 placeholder-gray-400'
                   />
+                  {errors.description && <p className='text-red-500 text-xs mt-1'>{errors.description}</p>}
                 </div>
-                
+
                 <div className='flex space-x-4'>
-                    <div className='w-1/2'>
-                        <label className='text-sm font-medium text-gray-700 mb-2 block'>Campaign ID *</label>
-                        <input
-                            type='number'
-                            value={campaignId}
-                            onChange={(e) => setCampaignId(e.target.value)}
-                            placeholder='e.g., 1'
-                            className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
-                            min='1'
-                        />
-                    </div>
-                    <div className='w-1/2'>
-                        <label className='text-sm font-medium text-gray-700 mb-2 block'>AI Score *</label>
-                        <input
-                            type='number'
-                            value={aiScore}
-                            onChange={(e) => setAiScore(e.target.value)}
-                            placeholder='e.g., 4'
-                            className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
-                            min='0'
-                            max='10'
-                        />
-                    </div>
+                  <div className='w-1/2'>
+                    <label className='text-sm font-medium text-gray-700 mb-2 block'>
+                      Campaign ID *
+                    </label>
+                    <input
+                      type='number'
+                      value={campaignId}
+                      onChange={(e) => setCampaignId(e.target.value)}
+                      placeholder='e.g., 1'
+                      className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
+                      min='1'
+                    />
+                    {errors.campaignId && <p className='text-red-500 text-xs mt-1'>{errors.campaignId}</p>}
+                  </div>
+                  <div className='w-1/2'>
+                    <label className='text-sm font-medium text-gray-700 mb-2 block'>
+                      AI Score *
+                    </label>
+                    <input
+                      type='number'
+                      value={aiScore}
+                      onChange={(e) => setAiScore(e.target.value)}
+                      placeholder='e.g., 4'
+                      className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
+                      min='0'
+                      max='10'
+                    />
+                    {errors.aiScore && <p className='text-red-500 text-xs mt-1'>{errors.aiScore}</p>}
+                  </div>
                 </div>
 
                 <div>
@@ -275,8 +302,8 @@ const CreatePostModal = ({
                           <button
                             onClick={(e) => {
                               e.preventDefault()
-                              e.stopPropagation(); // Fixed typo
-                                                            setUploadedImage(null)
+                              e.stopPropagation()
+                              setUploadedImage(null)
                             }}
                             className='absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full text-white transition-colors z-20'
                             title='Remove image'
@@ -452,19 +479,16 @@ const CreatePostModal = ({
                 </ul>
               </div>
               <div className='space-y-3'>
-                {selectedCaption && (
-                  <button
-                    onClick={handleSave}
-                    className='w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg disabled:opacity-50'
-                    style={{
-                      backgroundColor: isEditMode ? '#10b981' : '#7c3aed',
-                    }}
-                  >
-                    <Save className='w-5 h-5' />
-                    {isEditMode ? 'Update Post (Static)' : 'Save Post (Static)'}
-                  </button>
-                )}
-
+                <button
+                  onClick={handleSave}
+                  className='w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg disabled:opacity-50'
+                  style={{
+                    backgroundColor: isEditMode ? '#10b981' : '#7c3aed',
+                  }}
+                >
+                  <Save className='w-5 h-5' />
+                  {isEditMode ? 'Update Post' : 'Save Post'}
+                </button>
                 {saveStatus === 'success' && (
                   <div className='flex items-center justify-center gap-2 text-sm text-green-600 p-2 bg-green-50 rounded-lg'>
                     <CheckCircle className='w-4 h-4' />

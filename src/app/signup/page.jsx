@@ -2,6 +2,12 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -12,6 +18,7 @@ export default function SignUpPage() {
     password: '',
     confirmPassword: '',
   })
+  const [fieldErrors, setFieldErrors] = useState({})
   const [agreeTerms, setAgreeTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -22,19 +29,45 @@ export default function SignUpPage() {
       ...formData,
       [e.target.name]: e.target.value,
     })
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors({ ...fieldErrors, [e.target.name]: '' })
+    }
   }
 
 
  const handleSubmit = async () => {
-  if (!agreeTerms) {
-    alert('You must agree to the terms and conditions.')
-    return
-  }
+  if (isLoading) return
 
-  if (formData.password !== formData.confirmPassword) {
-    alert('Passwords do not match.')
-    return
-  }
+  setFieldErrors({})
+    let errors = {}
+
+    if (!formData.fullName.trim()) errors.fullName = "Full Name is required"
+    
+    if (!formData.email.trim()) {
+      errors.email = "Email is required"
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = "Please enter a valid email address"
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required"
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters"
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match"
+    }
+
+    // if (!agreeTerms) {
+    //   toast.error('You must agree to the terms and conditions.')
+    //   return 
+    // }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
 
   setIsLoading(true)
 
@@ -64,14 +97,17 @@ export default function SignUpPage() {
       }
       
       console.log('User created successfully:', data)
+      toast.success('Signup successfully')
       router.push('/Dashboard')
-    } else {
-      alert(data.message || 'Signup failed. Please check your details.')
+    }else {
+      if (data.errors) {
+        setFieldErrors(data.errors) 
+      }
+      toast.error(data.message || 'Signup failed.')
     }
-
   } catch (error) {
     console.error('Signup error:', error)
-    alert('Server connect nahi ho raha. Check if backend is running on 3001.')
+    toast.error('Server connect nahi ho raha. Check if backend is running on 3001.')
   } finally {
     setIsLoading(false)
   }
@@ -113,6 +149,7 @@ export default function SignUpPage() {
               className='w-full border border-gray-300 rounded-md py-2.5 px-4 text-gray-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
               placeholder='Full Name'
             />
+            {fieldErrors.fullName && <p className='text-red-500 text-xs mt-1 ml-1'>{fieldErrors.fullName}</p>}
           </div>
 
           <div className='mb-4'>
@@ -125,6 +162,7 @@ export default function SignUpPage() {
               className='w-full border border-gray-300 rounded-md py-2.5 px-4 text-gray-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
               placeholder='Email'
             />
+            {fieldErrors.email && <p className='text-red-500 text-xs mt-1 ml-1'>{fieldErrors.email}</p>}
           </div>
 
           <div className='relative mb-4'>
@@ -148,6 +186,7 @@ export default function SignUpPage() {
                 <Eye className='w-5 h-5' />
               )}
             </button>
+            {fieldErrors.password && <p className='text-red-500 text-xs mt-1 ml-1'>{fieldErrors.password}</p>}
           </div>
 
           <div className='relative mb-4'>
@@ -171,6 +210,7 @@ export default function SignUpPage() {
                 <Eye className='w-5 h-5' />
               )}
             </button>
+            {fieldErrors.confirmPassword && <p className='text-red-500 text-xs mt-1 ml-1'>{fieldErrors.confirmPassword}</p>}
           </div>
 
           <div className='flex items-center mb-6'>
