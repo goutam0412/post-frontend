@@ -36,13 +36,17 @@ export default function CampaignsContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(null);
-  const [campaignFiler , setCampaignsFilter] = useState({
+  const [campaignFilter , setCampaignsFilter] = useState({
     status: 'All'
   })
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+
 
   useEffect(() => {
     fetchCampaigns();
-  }, [campaignFiler]);
+  }, [campaignFilter, page, perPage]);
 
   useEffect(() => {
     if (!!campaignToEdit) {
@@ -55,11 +59,13 @@ export default function CampaignsContent() {
     const token = localStorage.getItem("token");
     setLoading(true);
     try {
-      var urlString = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`;
+      var urlString = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns?`;
 
-      if (campaignFiler.status !== "All") {
-        urlString += `?status=${campaignFiler.status}`;
+      if (campaignFilter.status !== "All") {
+        urlString += `status=${campaignFilter.status}&`;
       }
+      
+       urlString += `page=${page}&per_page=${perPage}`;
 
       const res = await fetch(
         urlString,
@@ -77,6 +83,7 @@ export default function CampaignsContent() {
       const campaignsData = data?.campaigns || [];
       setCampaigns(campaignsData);
       setFilteredCampaigns(campaignsData);
+      setTotalPages(data?.pagination?.total_pages || 1);
       console.log("Fetched campaigns:", campaignsData);
     } catch (err) {
       console.error("Error fetching campaigns:", err);
@@ -85,7 +92,7 @@ export default function CampaignsContent() {
     } finally {
       setLoading(false);
     }
-  }, [token , campaignFiler]);
+  }, [token , campaignFilter, page, perPage]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -142,7 +149,6 @@ export default function CampaignsContent() {
         }
       );
       fetchCampaigns()
-      console.log("Campaign created:", response.data);
     } catch (error) {
       console.error(
         "Create campaign error:",
@@ -197,12 +203,13 @@ export default function CampaignsContent() {
             Filter By Status
           </label>
           <select
-            value={campaignFiler.status}
+            value={campaignFilter.status}
             onChange={(e) => {
               setCampaignsFilter((prev) => ({
                 ...prev,
                 status: e.target.value,
               }));
+              setPage(1)
             }}
             className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
                  focus:ring-2 focus:ring-purple-500 focus:outline-none
@@ -360,6 +367,45 @@ export default function CampaignsContent() {
               </div>
             )}
           </div>
+
+          { (
+            <div className='p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50'>
+              {/* <div className='text-sm text-gray-600'>
+                Showing {indexOfFirstItem + 1} to{' '}
+                {Math.min(indexOfLastItem, filteredCampaigns.length)} of{' '}
+                {filteredCampaigns.length} entries
+              </div> */}
+              <div className='flex gap-2'>
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage((prev) => prev - 1)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md border ${
+                    page === 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Previous
+                </button>
+
+                <div className='flex items-center px-4 text-sm font-semibold text-purple-700'>
+                  Page {page} of {totalPages || 1}
+                </div>
+
+                <button
+                  disabled={page === totalPages || totalPages === 0}
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md border ${
+                    page === totalPages || totalPages === 0
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
