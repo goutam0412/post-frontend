@@ -101,7 +101,7 @@ export default function ImpozitionsDashboard() {
   const handleLogout = async () => {
     try {
       localStorage.removeItem("token");
-      router.push('/Login')
+      router.push('/login')
     } catch (error) {
       console.error("Error during logout:", error);
       alert("Logout error");
@@ -163,7 +163,7 @@ export default function ImpozitionsDashboard() {
               <div className='bg-white shadow-sm'>
                 <div className='p-6 flex items-center justify-between'>
                   <h2 className='text-xl font-semibold text-gray-800'>Recent Posts</h2>
-                  <Link href='/Posts'>
+                  <Link href='/posts'>
                     <button
                       className='px-4 py-2 hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm'
                       style={{ backgroundColor: '#bbb5ed', color: 'black' }}
@@ -194,7 +194,7 @@ export default function ImpozitionsDashboard() {
                   )}
                 </div>
                 <div className='p-4 bg-gray-50 rounded-b-xl'>
-                  <Link href='/Posts'>
+                  <Link href='/posts'>
                     <button className='text-indigo-600 text-sm font-medium hover:text-indigo-700 flex items-center gap-1'>
                       View All Posts
                       <ChevronRight className='w-4 h-4' />
@@ -249,7 +249,7 @@ export default function ImpozitionsDashboard() {
               <div className='bg-white shadow-sm'>
                 <div className='p-6 flex items-center justify-between'>
                   <h2 className='text-lg font-semibold text-gray-800'>Active Campaigns</h2>
-                  <Link href='/Campaign'>
+                  <Link href='/campaign'>
                     <button className='text-sm hover:text-indigo-700' style={{ color: '#bbb5ed', fontWeight: 600 }}>
                       View All
                     </button>
@@ -273,7 +273,7 @@ export default function ImpozitionsDashboard() {
                   ) : (
                     <div className='p-4 text-center text-gray-500'>
                       <p className='text-sm'>No campaigns yet. Create your first campaign!</p>
-                      <Link href='/Campaign'>
+                      <Link href='/campaign'>
                         <button
                           className='mt-3 px-4 py-2 text-sm rounded-lg text-white transition-all'
                           style={{ backgroundColor: '#7c3aed' }}
@@ -292,11 +292,11 @@ export default function ImpozitionsDashboard() {
                   <h2 className='text-lg font-semibold text-gray-800'>Quick Actions</h2>
                 </div>
                 <div className='p-4 space-y-2'>
-                  <QuickActionButton icon={<Plus className='w-5 h-5' />} label='Create New Post' href='/Posts' />
-                  <QuickActionButton icon={<Megaphone className='w-5 h-5' />} label='Start Campaign' href='/Campaign' />
-                  <QuickActionButton icon={<BarChart2 className='w-5 h-5' />} label='View Reports' href='/Analytics' />
-                  <QuickActionButton icon={<Calendar className='w-5 h-5' />} label='Schedule Posts' href='/Posts' />
-                  <QuickActionButton icon={<Settings className='w-5 h-5' />} label='Settings' href='/Settings' />
+                  <QuickActionButton icon={<Plus className='w-5 h-5' />} label='Create New Post' href='/posts' />
+                  <QuickActionButton icon={<Megaphone className='w-5 h-5' />} label='Start Campaign' href='/campaign' />
+                  <QuickActionButton icon={<BarChart2 className='w-5 h-5' />} label='View Reports' href='/analytics' />
+                  <QuickActionButton icon={<Calendar className='w-5 h-5' />} label='Schedule Posts' href='/posts' />
+                  <QuickActionButton icon={<Settings className='w-5 h-5' />} label='Settings' href='/settings' />
                 </div>
               </div>
             </div>
