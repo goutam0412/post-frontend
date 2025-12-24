@@ -3,6 +3,12 @@ import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -10,15 +16,47 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null) 
+  
+  const [errors, setErrors] = useState({}) 
 
   const router = useRouter()
 
- const handleSubmit = async () => {
-    setError(null) 
+  const handleEmailChange = (e) => {
+    const value = e.target.value
+    setEmail(value)
+    if (errors.email) {
+      setErrors((prev) => ({ ...prev, email: null }))
+    }
+  }
 
-    if (!email || !password) {
-      alert('Please fill in both email and password.')
+  const handlePasswordChange = (e) => {
+    const value = e.target.value
+    setPassword(value)
+    if (errors.password) {
+      setErrors((prev) => ({ ...prev, password: null }))
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (isLoading) return
+
+    setErrors({}) 
+    let validationErrors = {}
+
+    if (!email.trim()) {
+      validationErrors.email = 'Email is required'
+    } else if (!isValidEmail(email)) {
+      validationErrors.email = 'Please enter a valid email address'
+    }
+    
+    if (!password) {
+      validationErrors.password = 'Password is required'
+    } else if (password.length < 6) {
+      validationErrors.password = 'Password must be at least 6 characters'
+    }
+    
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
       return
     }
 
@@ -32,32 +70,28 @@ export default function LoginPage() {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          user: {
-            email: email,
-            password: password
-          }
+          user: { email, password }
         }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        const token = response.headers.get('Authorization')
-
+        const token = response.headers.get('Authorization') || response.headers.get('authorization');
         if (token) {
           localStorage.setItem('token', token)
-          console.log('✅ Token saved:', token)
         }
-
         localStorage.setItem('userData', JSON.stringify(data.user))
-        router.push('/Dashboard')
+        
+        toast.success('Login successful')
+        router.push('/dashboard')
       } else {
-        setError(data.error || 'Login failed. Invalid credentials.')
+        toast.error(data.error || 'Login failed. Invalid credentials.')
       }
 
     } catch (err) {
       console.error('Login error:', err)
-      setError('Backend server (3001) se connect nahi ho pa raha.')
+      toast.error('Server Error')
     } finally {
       setIsLoading(false)
     }
@@ -72,44 +106,44 @@ export default function LoginPage() {
         >
           <h2 className='text-3xl font-bold mb-4'>Smart Marketing</h2>
           <p className='text-sm leading-relaxed mb-8'>
-            Apne account mein login karein aur dashboard access karein.
+            Login and access dashboard.
           </p>
         </div>
         
         <div className='w-3/5 p-12 flex flex-col justify-center'>
           <h1 className='text-2xl font-semibold text-gray-700 mb-8'>Welcome</h1>
 
-          {error && (
-            <div className='p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg' role='alert'>
-              {error}
-            </div>
-          )}
-
+          {/* Email Field */}
           <div className='mb-4'>
             <input
               type='email'
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className='w-full border border-gray-300 rounded-md py-2.5 px-4'
+              onChange={handleEmailChange}
+              className={`w-full border rounded-md py-2.5 px-4 ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
               placeholder='Email Address'
             />
+            {errors.email && <p className='text-red-500 text-xs mt-1 ml-1'>{errors.email}</p>}
           </div>
 
-          <div className='relative mb-4'>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className='w-full border border-gray-300 rounded-md py-2.5 px-4 pr-10'
-              placeholder='Password'
-            />
-            <button
-              type='button'
-              onClick={() => setShowPassword(!showPassword)}
-              className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400'
-            >
-              {showPassword ? <EyeOff className='w-5 h-5' /> : <Eye className='w-5 h-5' />}
-            </button>
+          {/* Password Field */}
+          <div className='mb-4'>
+            <div className='relative'>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={handlePasswordChange}
+                className={`w-full border rounded-md py-2.5 px-4 pr-10 ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder='Password'
+              />
+              <button
+                type='button'
+                onClick={() => setShowPassword(!showPassword)}
+                className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400'
+              >
+                {showPassword ? <EyeOff className='w-5 h-5' /> : <Eye className='w-5 h-5' />}
+              </button>
+            </div>
+            {errors.password && <p className='text-red-500 text-xs mt-1 ml-1'>{errors.password}</p>}
           </div>
 
           <div className='flex items-center mb-6'>
@@ -140,7 +174,7 @@ export default function LoginPage() {
 
           <p className='text-center text-gray-600 text-sm mt-8'>
             Don't have an account?{' '}
-            <Link href='/SignUp' className='text-purple-600 font-semibold'>
+            <Link href='/signup' className='text-purple-600 font-semibold'>
               Sign up for free
             </Link>
           </p>

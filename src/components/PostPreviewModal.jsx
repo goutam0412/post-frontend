@@ -18,7 +18,7 @@ const PostPreviewModal = ({ showModal, closeModal, post }) => {
           <div className='flex items-center gap-2'>
             <Eye className='w-6 h-6 text-purple-600' />
             <h2 className='text-xl font-semibold text-gray-800 truncate'>
-              Preview: {post.title || 'Untitled Post'}
+              Preview
             </h2>
           </div>
           <button

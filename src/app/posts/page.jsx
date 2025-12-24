@@ -1,12 +1,13 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import {
-  List, Copy, Trash2, Calendar, Plus, Eye, Edit3, Clock, CheckCircle, AlertCircle,
+   Trash2, Calendar, Plus, Eye, Edit3
 } from 'lucide-react'
 import SideBar from '@/components/SideBar'
 import Header from '@/components/Header'
 import CreatePostModal from '@/components/CreatePostModal'
 import PostPreviewModal from '@/components/PostPreviewModal'
+import toast from 'react-hot-toast'
 
 export default function PostsContent() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -18,6 +19,13 @@ export default function PostsContent() {
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const postsPerPage = 10
+  const indexOfLastPost = currentPage * postsPerPage
+  const indexOfFirstPost = indexOfLastPost - postsPerPage
+  const currentItems = filteredPosts.slice(indexOfFirstPost, indexOfLastPost)
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage)
 
   const formatPostData = (post) => ({
     ...post,
@@ -47,12 +55,15 @@ export default function PostsContent() {
       setError(null)
     } catch (err) {
       setError(err.message)
+      toast.error('Failed to fetch posts')
     } finally {
       setLoading(false)
     }
   }
 
   const savePost = async (postData) => {
+    console.log('savePost called');
+
     try {
       const token = localStorage.getItem('token'); 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts`, {
@@ -67,17 +78,18 @@ export default function PostsContent() {
       console.log("token", token)
   
       if (response.ok) {
-        alert('Post Created Successfully!');
         fetchPosts();
+        toast.success('Post Created Successfully!');
         setShowCreateModal(false);
       } else {
-        // 500 error ke case mein response.json() shayad crash kare, isliye text() use karein
         const errorText = await response.text();
         console.error('Full Server Error:', errorText);
-        alert('Server Error! Check console for full log.');
+        toast.error('Server Error!');
       }
     } catch (err) {
       console.error('Network Error:', err);
+      toast.error('Network Error! Could not save the post.')
+
     }
   };
 
@@ -89,11 +101,14 @@ export default function PostsContent() {
         body: JSON.stringify({ post: postData }),
       })
       if (response.ok) {
+        toast.success('Post updated successfully!')
         fetchPosts()
         setShowCreateModal(false)
       }
     } catch (err) {
       console.error("Update Error:", err)
+      toast.error('Failed to update the post!')
+
     }
   }
 
@@ -110,6 +125,7 @@ export default function PostsContent() {
         p.description?.toLowerCase().includes(lower)
     )
     setFilteredPosts(filtered)
+    setCurrentPage(1)
   }, [posts, searchQuery])
 
   // DELETE API Call
@@ -121,8 +137,13 @@ export default function PostsContent() {
           headers: { 'Accept': 'application/json' }
         })
         if (response.ok) {
-          alert('Deleted successfully!')
+          toast.success('Deleted successfully!')
           fetchPosts()
+        } else {
+          toast.error('Failed to delete the post.')
+          toast.error('Error deleting post!')
+
+
         }
       } catch (err) {
         console.error(err)
@@ -146,8 +167,8 @@ export default function PostsContent() {
           <div className='bg-white shadow-lg'>
             <div className='p-6 border-b border-gray-100 flex justify-between items-center'>
               <div>
-                <h2 className='text-2xl font-bold text-gray-800'>Posts</h2>
-                <p className='text-sm text-gray-500'>Showing data from Local API</p>
+                <h2 className='text-2xl font-bold text-gray-800'>POSTS</h2>
+                {/* <p className='text-sm text-gray-500'>Showing data from Local API</p> */}
               </div>
               <button
                 onClick={() => { setPostToEdit(null); setShowCreateModal(true); }}
@@ -169,7 +190,7 @@ export default function PostsContent() {
                   </tr>
                 </thead>
                 <tbody className='bg-white divide-y divide-gray-100'>
-                  {filteredPosts.map((post) => (
+                  {currentItems.map((post) => (
                     <tr key={post.id} className='hover:bg-purple-50 transition-colors'>
                       <td className='px-6 py-4 max-w-sm'>
                         <div className='text-sm font-semibold text-gray-900 truncate'>{post.title}</div>
@@ -196,6 +217,41 @@ export default function PostsContent() {
               </table>
             </div>
           </div>
+          <div className='p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50'>
+              <div className='text-sm text-gray-600'>
+                Showing {indexOfFirstPost + 1} to {Math.min(indexOfLastPost, filteredPosts.length)} of {filteredPosts.length} entries
+              </div>
+              
+              <div className='flex gap-2'>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md border ${
+                    currentPage === 1 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Previous
+                </button>
+
+                <div className='flex items-center px-4 text-sm font-semibold text-purple-700'>
+                  Page {currentPage} of {totalPages || 1}
+                </div>
+
+                <button
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md border ${
+                    currentPage === totalPages || totalPages === 0
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
         </div>
       </div>
 

@@ -10,11 +10,11 @@ import {
 import { useRouter, usePathname } from 'next/navigation'
 
 const links = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/Dashboard' },
-  { label: 'My Posts', icon: LayoutDashboard, href: '/Posts' },
-  { label: 'My Campaigns', icon: Users, href: '/Campaign' },
-  { label: 'Analytics Dashboard', icon: UserPlus, href: '/Analytics' },
-  { label: 'Account Settings', icon: Settings, href: '/Settings' },
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+  { label: 'My Posts', icon: LayoutDashboard, href: '/posts' },
+  { label: 'My Campaigns', icon: Users, href: '/campaign' },
+  { label: 'Analytics Dashboard', icon: UserPlus, href: '/analytics' },
+  { label: 'Account Settings', icon: Settings, href: '/settings' },
 ]
 
 export default function SideBar() {
