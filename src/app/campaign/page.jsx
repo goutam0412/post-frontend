@@ -36,21 +36,40 @@ export default function CampaignsContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(null);
+  const [campaignFiler , setCampaignsFilter] = useState({
+    status: 'All'
+  })
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+  }, [campaignFiler]);
+
+  useEffect(() => {
+    if (!!campaignToEdit) {
+      console.log(campaignToEdit)
+      setShowCreateModal(true);
+    }
+  }, [campaignToEdit]);
 
   const fetchCampaigns = useCallback(async () => {
     const token = localStorage.getItem("token");
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`, {
-        method: "GET",
-        headers: {
-          token: `Bearer ${token}`,
-        },
-      });
+      var urlString = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`;
+
+      if (campaignFiler.status !== "All") {
+        urlString += `?status=${campaignFiler.status}`;
+      }
+
+      const res = await fetch(
+        urlString,
+        {
+          method: "GET",
+          headers: {
+            token: `Bearer ${token}`,
+          },
+        }
+      );
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -66,7 +85,7 @@ export default function CampaignsContent() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token , campaignFiler]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -156,10 +175,10 @@ export default function CampaignsContent() {
 
   const editCampaign = (id) => {
     const campaign = campaigns.find((c) => c.id === id);
-    if (campaign) {
+  
       setCampaignToEdit(campaign);
-      setShowCreateModal(true);
-    }
+      // setShowCreateModal(true);
+    
   };
 
   const previewCampaign = (campaign) => {
@@ -172,6 +191,29 @@ export default function CampaignsContent() {
       <SideBar />
       <div className="flex-1 overflow-auto">
         <Header title="My Campaigns" onSearch={handleSearch} />
+
+        <div className="w-64 pl-8 ">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Filter By Status
+          </label>
+          <select
+            value={campaignFiler.status}
+            onChange={(e) => {
+              setCampaignsFilter((prev) => ({
+                ...prev,
+                status: e.target.value,
+              }));
+            }}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
+                 focus:ring-2 focus:ring-purple-500 focus:outline-none
+                 text-gray-700 "
+          >
+            <option value="All">ALL</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
 
         <div className="p-8">
           <div className="bg-white shadow-lg">
@@ -262,7 +304,16 @@ export default function CampaignsContent() {
                             </div>
                             <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                               <Calendar className="w-3 h-3" />{" "}
-                              {camp.schedule?.split(" to ")[0]}...
+                              {camp.schedule
+                                ? new Date(camp.schedule).toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    }
+                                  )
+                                : "N/A"}
                             </div>
                           </td>
                           {/* <td className="px-6 py-4 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis">

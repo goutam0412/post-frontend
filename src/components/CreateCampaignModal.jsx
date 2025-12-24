@@ -65,6 +65,7 @@ const CreateCampaignModal = ({
   onClose,
   onSave,
   campaignToEdit,
+  campaignData,
   updateCampaign,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -90,22 +91,24 @@ const CreateCampaignModal = ({
       key: "selection",
     },
   ]);
+  const [posts , setPosts] = useState([])
 
-  const isEditMode = !!campaignToEdit;
+  const isEditMode = !!campaignData;
+
   useEffect(() => {
-    if (isEditMode && campaignToEdit) {
-      const audienceParts = campaignToEdit.audience.split(", ");
+    if (isEditMode && campaignData) {
+      // const audienceParts = campaignToEdit.audience.split(", ");
 
       setFormData({
-        campaignName: campaignToEdit.name,
-        selectedPost: { id: Date.now(), title: campaignToEdit.postTitle },
-        budget: campaignToEdit.budget,
-        schedule: campaignToEdit.schedule,
-        location: audienceParts[0] || "",
-        age: audienceParts[1] || "",
-        interests: audienceParts[2] || "",
+        campaignName: campaignData.title,
+        selectedPost: { id: Date.now(), title: campaignData.postTitle },
+        budget: campaignData.budget,
+        schedule: campaignData.schedule,
+        // location: audienceParts[0] || "",
+        // age: audienceParts[1] || "",
+        // interests: audienceParts[2] || "",
         facebookConnected: true,
-        status: campaignToEdit.status || "Draft",
+        status: campaignData.status || "Draft",
       });
       setCurrentStep(1);
     } else {
@@ -127,6 +130,7 @@ const CreateCampaignModal = ({
 
   useEffect(() => {
     fetchUserBusinessProfile();
+    fetchPosts()
   }, []);
 
   useEffect(() => {
@@ -144,9 +148,11 @@ const CreateCampaignModal = ({
 
   const fetchUserBusinessProfile = async () => {
     try {
-      let userId = 5;
+      const userData = localStorage.getItem('userData')
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/business_profiles/${userId}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/business_profiles/${parsedUser.id}`
       );
       setBusinessProfiles([response.data.business_profile]);
       setFormData((prev) => ({
@@ -158,12 +164,37 @@ const CreateCampaignModal = ({
     }
   };
 
-  const nextStep = () => {
-    // if (currentStep === 1 && !formData.selectedPost)
-    //   return alert("Please select a post.");
 
-    // if (currentStep === 1 && !formData.businessProfileId)
-    //   return alert("Please select a businessProfile.");
+    const fetchPosts = async () => {
+    try {
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts`)
+      if (!response.ok) throw new Error('Failed to get data!')
+      
+      const data = await response.json()
+      const apiPosts = data.posts || data || []
+      
+      const formatted = apiPosts.map((item, index) => {
+        return {
+          id: item?.id,
+          title: item?.title,
+          description: item?.caption,
+        };
+      });
+      
+      setPosts(formatted)
+   
+    } catch (err) {
+   
+      toast.error('Failed to fetch posts')
+    } finally {
+   
+    }
+  }
+
+
+  const nextStep = () => {
+
     let errorMessage = {};
 
     if (currentStep === 1) {
@@ -185,34 +216,15 @@ const CreateCampaignModal = ({
         errorMessage.businessProfile = "Please select a buiness profile";
       }
 
-      // if (!formData.selectedPost) {
-      //   errorMessage.selectedPost = "Please select a post";
-      // }
     }
 
     if (currentStep === 2) {
-      // if (!formData.budget || formData.budget < 1) {
-      //   errorMessage.budget = "Budget must be greater than 0";
-      // }
+   
 
       if (!formData.schedule) {
         errorMessage.schedule = "Please select a schedule";
       }
     }
-
-    // if (currentStep === 3) {
-    // if (!formData.location) {
-    //   errorMessage.location = "Location is required";
-    // }
-
-    // if (!formData.age) {
-    //   errorMessage.age = "Age is required";
-    // }
-
-    // if (!formData.interests) {
-    //   errorMessage.interests = "Interests are required";
-    // }
-    // }
 
     if (Object.keys(errorMessage).length > 0) {
       setErrors(errorMessage);
@@ -337,7 +349,7 @@ const CreateCampaignModal = ({
         Select Post to Promote
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {mockPosts.map((post) => (
+        {posts?.length >  0 && posts.map((post) => (
           <div
             key={post.id}
             onClick={() => {
@@ -380,7 +392,9 @@ const CreateCampaignModal = ({
         <select
           value={formData.status}
           onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white appearance-none"
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
+                 focus:ring-2 focus:ring-purple-500 focus:outline-none
+                 text-gray-700"
         >
           {AVAILABLE_STATUSES.map((s) => {
             const Icon = statusIcons[s];
@@ -419,7 +433,7 @@ const CreateCampaignModal = ({
         </label>
         <input
           type="number"
-          value={formData.budget}
+          value={formData?.budget ?? ''}
           onChange={(e) => {
             //  let error = ''
             // if(e.target.value > 0) {
@@ -447,7 +461,7 @@ const CreateCampaignModal = ({
           <input
             type="text"
             readOnly
-            value={formData.schedule}
+            value={formData?.schedule ?? ''}
             onClick={() => setShowDatePicker(true)}
             placeholder="Select date range"
             className="w-full px-4 py-3 border border-gray-200 rounded-lg cursor-pointer rounded-lg focus:ring-2 focus:ring-purple-500"
@@ -580,7 +594,7 @@ const CreateCampaignModal = ({
 
           <p className="text-gray-500">Budget:</p>
           <p className="font-medium text-green-600">
-            ${formData.budget.toLocaleString()}
+            ${formData?.budget?.toLocaleString()}
           </p>
           <p className="text-gray-500">Status:</p>
           <p className="font-medium text-purple-700">{formData.status}</p>
@@ -617,7 +631,7 @@ const CreateCampaignModal = ({
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
       <div className="bg-white shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-xl">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
           <h2 className="text-xl font-semibold text-gray-800">
             {isEditMode ? "Edit Campaign" : "Create New Campaign"}
           </h2>
