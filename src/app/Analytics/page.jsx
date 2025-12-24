@@ -1,17 +1,18 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import {
-  TrendingUp,
   Eye,
-  Heart,
-  Users,
+  Share2,
   Target,
   Download,
   ArrowUpRight,
   ArrowDownRight,
+  Users,
+  ShoppingCart,
 } from 'lucide-react'
 import SideBar from '@/components/SideBar'
 import Header from '@/components/Header'
+import axios from 'axios'
 
 export default function AnalyticsDashboard() {
   const [dateRange, setDateRange] = useState('7days')
@@ -19,41 +20,51 @@ export default function AnalyticsDashboard() {
   // 🔍 Search states
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredPosts, setFilteredPosts] = useState([])
+  const [topPost, setTopPost] = useState(null);
 
-  const overviewStats = [
-    {
-      title: 'Total Impressions',
-      value: '124.5K',
-      change: '+12.5%',
-      trend: 'up',
-      icon: Eye,
-      color: 'bg-blue-500',
-    },
-    {
-      title: 'Engagement Rate',
-      value: '5.8%',
-      change: '+2.3%',
-      trend: 'up',
-      icon: Heart,
-      color: 'bg-pink-500',
-    },
-    {
-      title: 'Total Reach',
-      value: '89.2K',
-      change: '-3.2%',
-      trend: 'down',
-      icon: Users,
-      color: 'bg-purple-500',
-    },
-    {
-      title: 'Click Rate',
-      value: '3.4%',
-      change: '+0.8%',
-      trend: 'up',
-      icon: Target,
-      color: 'bg-green-500',
-    },
-  ]
+  // ✅ Correct overviewStats icons
+  // const overviewStats = [
+  //   {
+  //     title: 'Views',
+  //     value: '124.5K',
+  //     change: '+12.5%',
+  //     trend: 'up',
+  //     icon: Eye,
+  //     color: 'bg-blue-500',
+  //   },
+  //   {
+  //     title: 'Orders',
+  //     value: '5.8%',
+  //     change: '+2.3%',
+  //     trend: 'up',
+  //     icon: ShoppingCart,
+  //     color: 'bg-pink-500',
+  //   },
+  //   {
+  //     title: 'Shares',
+  //     value: '89.2K',
+  //     change: '-3.2%',
+  //     trend: 'down',
+  //     icon: Share2,
+  //     color: 'bg-purple-500',
+  //   },
+  //   {
+  //     title: 'Clicks',
+  //     value: '3.4%',
+  //     change: '+0.8%',
+  //     trend: 'up',
+  //     icon: Target,
+  //     color: 'bg-green-500',
+  //   },
+  // ]
+
+  const [overviewStats, setOverviewStats] = useState([
+    { title: 'Views', value: 0, change: '0%', trend: 'up', icon: Eye, color: 'bg-blue-500' },
+    { title: 'Orders', value: 0, change: '0%', trend: 'up', icon: ShoppingCart, color: 'bg-pink-500' },
+    { title: 'Shares', value: 0, change: '0%', trend: 'up', icon: Share2, color: 'bg-purple-500' },
+    { title: 'Clicks', value: 0, change: '0%', trend: 'up', icon: Target, color: 'bg-green-500' },
+  ]);
+
 
   const engagementData = [
     { date: 'Mon', value: 12400 },
@@ -72,53 +83,62 @@ export default function AnalyticsDashboard() {
     { name: 'LinkedIn', posts: 6, engagement: 5.1, color: '#0A66C2' },
   ]
 
-  const topPosts = [
-    {
-      id: 1,
-      title: 'Summer Campaign',
-      platform: 'Instagram',
-      impressions: '28.5K',
-      engagement: '1.8K',
-      rate: '6.5%',
-      icon: '📷',
-    },
-    {
-      id: 2,
-      title: 'Product Highlight',
-      platform: 'LinkedIn',
-      impressions: '18.2K',
-      engagement: '1.1K',
-      rate: '6.2%',
-      icon: '💼',
-    },
-    {
-      id: 3,
-      title: 'Success Story',
-      platform: 'Facebook',
-      impressions: '15.8K',
-      engagement: '890',
-      rate: '5.6%',
-      icon: '👤',
-    },
-  ]
-
-  // Keep filtered posts in sync
   useEffect(() => {
-    setFilteredPosts(topPosts)
-  }, [])
+    const fetchAnalytics = async () => {
+      try {
+        const res = await axios.get('http://localhost:3000/api/v1/analytics');
+        const data = res.data.analytics;
 
-  // 🔍 Handle search
+        // Sum values across all posts for each metric
+        const totalViews = data.reduce((sum, item) => sum + (item.views || 0), 0);
+        const totalOrders = data.reduce((sum, item) => sum + (item.orders || 0), 0);
+        const totalShares = data.reduce((sum, item) => sum + (item.shares || 0), 0);
+        const totalClicks = data.reduce((sum, item) => sum + (item.clicks || 0), 0);
+
+        setOverviewStats([
+          { title: 'Views', value: totalViews, change: '+0%', trend: 'up', icon: Eye, color: 'bg-blue-500' },
+          { title: 'Orders', value: totalOrders, change: '+0%', trend: 'up', icon: ShoppingCart, color: 'bg-pink-500' },
+          { title: 'Shares', value: totalShares, change: '+0%', trend: 'up', icon: Share2, color: 'bg-purple-500' },
+          { title: 'Clicks', value: totalClicks, change: '+0%', trend: 'up', icon: Target, color: 'bg-green-500' },
+        ]);
+
+      } catch (err) {
+        console.error('Error fetching analytics:', err);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await axios.get('http://localhost:3000/api/v1/posts');
+        if (res.data.posts.length > 0) {
+          setTopPost(res.data.posts[0]) // FIRST POST ONLY
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
   const handleSearch = (query) => {
     setSearchQuery(query)
     if (!query.trim()) {
-      setFilteredPosts(topPosts)
+      setFilteredPosts(topPost ? [topPost] : [])
     } else {
       const lower = query.toLowerCase()
-      const filtered = topPosts.filter(
-        (post) =>
-          post.title.toLowerCase().includes(lower) ||
-          post.platform.toLowerCase().includes(lower)
-      )
+      const filtered = topPost
+        ? [topPost].filter(
+          (post) =>
+            post.caption.toLowerCase().includes(lower) ||
+            post.hashtags.toLowerCase().includes(lower)
+        )
+        : []
       setFilteredPosts(filtered)
     }
   }
@@ -133,7 +153,6 @@ export default function AnalyticsDashboard() {
       <SideBar />
 
       <div className='flex-1 overflow-auto'>
-        {/* 🔍 Pass onSearch to Header */}
         <Header title='Analytics' onSearch={handleSearch} />
 
         <div className='p-8'>
@@ -162,7 +181,7 @@ export default function AnalyticsDashboard() {
 
           {/* Stats Grid */}
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
-            {overviewStats.map((stat, index) => (
+            {/* {overviewStats.map((stat, index) => (
               <div
                 key={index}
                 className='bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow'
@@ -174,9 +193,8 @@ export default function AnalyticsDashboard() {
                     <stat.icon className='w-6 h-6 text-white' />
                   </div>
                   <div
-                    className={`flex items-center gap-1 text-sm font-medium ${
-                      stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                    }`}
+                    className={`flex items-center gap-1 text-sm font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                      }`}
                   >
                     {stat.trend === 'up' ? (
                       <ArrowUpRight className='w-4 h-4' />
@@ -191,12 +209,29 @@ export default function AnalyticsDashboard() {
                 </h3>
                 <p className='text-sm text-gray-600'>{stat.title}</p>
               </div>
+            ))} */}
+            {overviewStats.map((stat, index) => (
+              <div key={index} className='bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center`}>
+                    <stat.icon className='w-6 h-6 text-white' />
+                  </div>
+                  <div className={`flex items-center gap-1 text-sm font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                    {stat.trend === 'up' ? <ArrowUpRight className='w-4 h-4' /> : <ArrowDownRight className='w-4 h-4' />}
+                    {stat.change}
+                  </div>
+                </div>
+                <h3 className='text-2xl font-bold text-gray-900 mb-1'>{stat.value}</h3>
+                <p className='text-sm text-gray-600'>{stat.title}</p>
+              </div>
             ))}
+
+
           </div>
 
           {/* Charts */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8'>
-            {/* Engagement Chart */}
+            {/* Engagement overview */}
             <div className='bg-white rounded-xl shadow-sm p-6'>
               <h3 className='text-lg font-semibold text-gray-900 mb-6'>
                 Engagement Overview
@@ -246,9 +281,8 @@ export default function AnalyticsDashboard() {
                       <div
                         className='absolute inset-y-0 left-0 rounded-lg transition-all duration-500'
                         style={{
-                          width: `${
-                            (platform.engagement / maxPlatformEngagement) * 100
-                          }%`,
+                          width: `${(platform.engagement / maxPlatformEngagement) * 100
+                            }%`,
                           backgroundColor: platform.color,
                         }}
                       ></div>
@@ -265,60 +299,30 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* Top Posts */}
-          <div className='bg-white rounded-xl shadow-sm p-6'>
-            <h3 className='text-lg font-semibold text-gray-900 mb-6'>
-              Top Performing Posts
-            </h3>
-            <div className='space-y-4'>
-              {filteredPosts.length === 0 ? (
-                <p className='text-gray-500 text-sm'>
-                  No posts found for “{searchQuery}”
-                </p>
-              ) : (
-                filteredPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className='flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors'
-                  >
-                    <div className='flex items-center gap-4'>
-                      <div className='w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-2xl'>
-                        {post.icon}
-                      </div>
-                      <div>
-                        <h4 className='font-medium text-gray-900'>
-                          {post.title}
-                        </h4>
-                        <p className='text-sm text-gray-500'>
-                          {post.platform}
-                        </p>
-                      </div>
-                    </div>
-                    <div className='flex items-center gap-6 text-sm'>
-                      <div className='text-center'>
-                        <div className='font-semibold text-gray-900'>
-                          {post.impressions}
-                        </div>
-                        <div className='text-xs text-gray-500'>
-                          Impressions
-                        </div>
-                      </div>
-                      <div className='text-center'>
-                        <div className='font-semibold text-gray-900'>
-                          {post.engagement}
-                        </div>
-                        <div className='text-xs text-gray-500'>Engagement</div>
-                      </div>
-                      <div className='text-center'>
-                        <div className='font-semibold text-green-600'>
-                          {post.rate}
-                        </div>
-                        <div className='text-xs text-gray-500'>Rate</div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+          <div className="bg-white rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Top Performing Posts</h3>
+
+            {topPost ? (
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{topPost.caption}</p>
+                  <p className="text-sm text-gray-500">campaign_id {topPost.campaign_id}</p>
+                  <p className="text-sm text-gray-500">
+                    #{topPost.hashtags}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-green-600">
+                    AI Score: {topPost.ai_score}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(topPost.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No posts available</p>
+            )}
           </div>
         </div>
       </div>
