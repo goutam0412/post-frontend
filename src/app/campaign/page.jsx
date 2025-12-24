@@ -21,9 +21,9 @@ import CampaignPreviewModal from "@/components/CampaignPreviewModal";
 import axios from "axios";
 
 const statusMap = {
-  Running: { icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
-  Scheduled: { icon: Clock, color: "text-blue-600", bg: "bg-blue-100" },
-  Draft: { icon: AlertCircle, color: "text-gray-600", bg: "bg-gray-100" },
+  completed: { icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
+  active: { icon: Clock, color: "text-blue-600", bg: "bg-blue-100" },
+  draft: { icon: AlertCircle, color: "text-gray-600", bg: "bg-gray-100" },
 };
 
 export default function CampaignsContent() {
@@ -93,7 +93,7 @@ export default function CampaignsContent() {
       budget: newCampaignData.budget,
       schedule: newCampaignData.schedule,
       audience: `${newCampaignData.location}, ${newCampaignData.age}, ${newCampaignData.interests}`,
-      status: newCampaignData.status || "Draft",
+      status: newCampaignData.status || "draft",
       platform: "Facebook/Instagram",
       createdAt: new Date().toLocaleDateString(),
     };
@@ -103,17 +103,17 @@ export default function CampaignsContent() {
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`,
         {
           campaign: {
-            business_profile_id: 1, 
+            business_profile_id: newCampaignData.business_profile_id, 
             title: newCampaignData.campaignName,
             budget: newCampaignData.budget,
             schedule: newCampaignData.schedule,
-            status: null,
+            status: newCampaignData.status,
             platform: "facebook",
-            audience: {
-              location: newCampaignData.location,
-              age: newCampaignData.age,
-              interests: newCampaignData.interests,
-            },
+            // audience: {
+            //   location: newCampaignData.location,
+            //   age: newCampaignData.age,
+            //   interests: newCampaignData.interests,
+            // },
           },
         },
         {
@@ -133,8 +133,6 @@ export default function CampaignsContent() {
       setShowCreateModal(false);
     }
 
-    // setCampaigns((prev) => [newCampaign, ...prev])
-    // setFilteredCampaigns((prev) => [newCampaign, ...prev])
   };
 
   const handleUpdateCampaign = (updatedData) => {
@@ -180,7 +178,7 @@ export default function CampaignsContent() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Campaign Management
+                  CAMPAIGN MANAGEMENT
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Monitor and manage all your paid ad campaigns.
@@ -191,7 +189,7 @@ export default function CampaignsContent() {
                   setCampaignToEdit(null);
                   setShowCreateModal(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-semibold hover:shadow-xl"
+                className="flex items-center gap-2 px-4 py-2.5 text-white font-semibold hover:shadow-xl"
                 style={{ backgroundColor: "#bbb5ed", color: "#000" }}
               >
                 <Plus className="w-5 h-5" /> Create Campaign
@@ -242,7 +240,7 @@ export default function CampaignsContent() {
                   <tbody className="bg-white divide-y divide-gray-100">
                     {filteredCampaigns.map((camp) => {
                       const campStatus =
-                        statusMap[camp.status] || statusMap["Draft"];
+                        statusMap[camp.status] || statusMap["draft"];
                       const StatusIcon = campStatus.icon;
                       return (
                         <tr
