@@ -28,13 +28,13 @@ const CampaignPreviewModal = ({ showModal, closeModal, campaign }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Active':
-      case 'Published':
+      case 'completed':
+      case 'published':
         return 'text-green-600'
-      case 'Pending':
+      case 'active':
       case 'Scheduled':
         return 'text-yellow-600'
-      case 'Draft':
+      case 'draft':
       case 'Paused':
       default:
         return 'text-gray-600'
@@ -79,7 +79,7 @@ const CampaignPreviewModal = ({ showModal, closeModal, campaign }) => {
             <DetailItem 
               icon={Clock} 
               label='Status' 
-              value={campaign.status || 'Draft'}
+              value={campaign.status || 'draft'}
               color={getStatusColor(campaign.status)}
             />
             <DetailItem 
