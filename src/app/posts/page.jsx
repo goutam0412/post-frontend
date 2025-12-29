@@ -179,7 +179,7 @@ export default function PostsContent() {
               </button>
             </div>
 
-          {loading ? <div className="p-12 text-center">Loading campaigns...</div> :
+          {loading ? <div className="p-12 text-center">Loading Post...</div> :
               <div className='overflow-x-auto'>
                 <table className='min-w-full divide-y divide-gray-200'>
                   <thead className='bg-gray-50'>
