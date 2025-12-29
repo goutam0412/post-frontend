@@ -22,11 +22,24 @@ export default function SideBar() {
   const pathname = usePathname()
 
   return (
-    <div className='w-72 bg-white shadow-sm flex flex-col'>
-      <div className='p-6'>
-        <div className='flex items-center gap-2'>
-          <FileText style={{ color: '#988df4' }} className='w-5 h-5' />
-          <span className='text-lg font-semibold text-gray-700'>Posts</span>
+    <>
+      <button 
+        onClick={toggleSidebar}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md"
+      >
+        {isOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      <div className={` 
+        fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-sm flex flex-col transition-transform duration-300 ease-in-out
+        lg:relative lg:translate-x-0 
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className='p-6'>
+          <div className='flex items-center gap-2'>
+            <FileText style={{ color: '#988df4' }} className='w-5 h-5' />
+            <span className='text-lg font-semibold text-gray-700 posts-close'>Posts</span>
+          </div>
         </div>
       </div>
 
@@ -64,6 +77,6 @@ export default function SideBar() {
           })}
         </div>
       </nav>
-    </div>
+   </>
   )
 }

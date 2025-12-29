@@ -61,21 +61,19 @@ export default function CampaignsContent() {
     try {
       var urlString = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns?`;
 
-      if (campaignFilter.status !== "All") {
-        urlString += `status=${campaignFilter.status}&`;
+      if (campaignFilter?.status && campaignFilter.status !== 'All') {
+        urlString += `status=${campaignFilter.status}&`
       }
-      
-       urlString += `page=${page}&per_page=${perPage}`;
 
-      const res = await fetch(
-        urlString,
-        {
-          method: "GET",
-          headers: {
-            token: `Bearer ${token}`,
-          },
-        }
-      );
+      urlString += `page=${page}&per_page=${perPage}`
+
+      const res = await fetch(urlString, {
+        method: 'GET',
+        headers: {
+          token: `Bearer ${token}`,
+        },
+      })
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -92,7 +90,7 @@ export default function CampaignsContent() {
     } finally {
       setLoading(false);
     }
-  }, [token , campaignFilter, page, perPage]);
+  }, [token, campaignFilter, page, perPage])
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -180,12 +178,12 @@ export default function CampaignsContent() {
   };
 
   const editCampaign = (id) => {
-    const campaign = campaigns.find((c) => c.id === id);
-  
-      setCampaignToEdit(campaign);
-      // setShowCreateModal(true);
-    
-  };
+    const campaign = campaigns.find((c) => c.id === id)
+    if (campaign) {
+      setCampaignToEdit(campaign)
+      setShowCreateModal(true)
+    }
+  }
 
   const previewCampaign = (campaign) => {
     setPreviewCampaignData(campaign);
@@ -195,11 +193,14 @@ export default function CampaignsContent() {
   return (
     <div className="flex h-screen" style={{ background: "#f2f0fe" }}>
       <SideBar />
-      <div className="flex-1 overflow-auto">
-        <Header title="My Campaigns" onSearch={handleSearch} />
+      <div className='flex-1 overflow-auto'>
+        <Header title='My Campaigns' onSearch={handleSearch} />
 
-        <div className="w-64 pl-8 ">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className='w-64 pl-8'>
+          <label
+            className='block text-sm font-medium text-gray-700 mb-1'
+            style={{ fontWeight: 900 }}
+          >
             Filter By Status
           </label>
           <select
@@ -208,17 +209,15 @@ export default function CampaignsContent() {
               setCampaignsFilter((prev) => ({
                 ...prev,
                 status: e.target.value,
-              }));
+              }))
               setPage(1)
             }}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
-                 focus:ring-2 focus:ring-purple-500 focus:outline-none
-                 text-gray-700 "
+            className='w-full md:w-48 px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none text-gray-700 shadow-md hover:shadow-lg transition-all'
           >
-            <option value="All">ALL</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="completed">Completed</option>
+            <option value='All'>ALL</option>
+            <option value='active'>Active</option>
+            <option value='draft'>Draft</option>
+            <option value='completed'>Completed</option>
           </select>
         </div>
 

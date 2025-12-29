@@ -125,9 +125,12 @@ const CreatePostModal = ({
     setErrors({})
     let validationErrors = {}
     if (!title.trim()) validationErrors.title = 'Title is required'
-    if (!description.trim()) validationErrors.description = 'Description is required'
-    if (!campaignId || campaignId <= 0) validationErrors.campaignId = 'Invalid Campaign ID'
-    if (aiScore === '' || aiScore < 0 || aiScore > 10) validationErrors.aiScore = 'Score must be 0-10'
+    if (!description.trim())
+      validationErrors.description = 'Description is required'
+    if (!campaignId || campaignId <= 0)
+      validationErrors.campaignId = 'Invalid Campaign ID'
+    if (aiScore === '' || aiScore < 0 || aiScore > 10)
+      validationErrors.aiScore = 'Score must be 0-10'
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
@@ -191,35 +194,55 @@ const CreatePostModal = ({
               <div className='space-y-4'>
                 <div>
                   <label className='text-sm font-medium text-gray-700 mb-2 block'>
-                    Post Title *
+                    Post Title <span className='text-red-500'>*</span>
                   </label>
                   <input
                     type='text'
                     value={title}
-                    onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
+                    onChange={(e) => {
+                      // setTitle(e.target.value)
+                      // clearError('title')
+                      const value = e.target.value
+                      if(/\d/.test(value)) {
+                        setErrors((prev) => ({...prev, title: "Only alphabets and spaces are allowed"}))
+                      } else {
+                        setErrors((prev) => ({...prev, title: null}))
+                      }
+                      setTitle(value)
+                      clearError('title')
+                    }}
                     placeholder='Enter your post title...'
                     className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
                   />
-                  {errors.title && <p className='text-red-500 text-xs mt-1'>{errors.title}</p>}
+                  {errors.title && (
+                    <p className='text-red-500 text-xs mt-1'>{errors.title}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className='text-sm font-medium text-gray-700 mb-2 block'>
-                    Description *
+                    Description <span className='text-red-500'>*</span>
                   </label>
                   <textarea
                     value={description}
-                    onChange={(e) => { setDescription(e.target.value); clearError('description'); }}
+                    onChange={(e) => {
+                      setDescription(e.target.value)
+                      clearError('description')
+                    }}
                     placeholder='Describe your post in detail...'
                     className='w-full h-32 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-gray-800 placeholder-gray-400'
                   />
-                  {errors.description && <p className='text-red-500 text-xs mt-1'>{errors.description}</p>}
+                  {errors.description && (
+                    <p className='text-red-500 text-xs mt-1'>
+                      {errors.description}
+                    </p>
+                  )}
                 </div>
 
                 <div className='flex space-x-4'>
                   <div className='w-1/2'>
                     <label className='text-sm font-medium text-gray-700 mb-2 block'>
-                      Campaign ID *
+                      Campaign ID <span className='text-red-500'>*</span>
                     </label>
                     <input
                       type='number'
@@ -229,11 +252,15 @@ const CreatePostModal = ({
                       className='w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 placeholder-gray-400'
                       min='1'
                     />
-                    {errors.campaignId && <p className='text-red-500 text-xs mt-1'>{errors.campaignId}</p>}
+                    {errors.campaignId && (
+                      <p className='text-red-500 text-xs mt-1'>
+                        {errors.campaignId}
+                      </p>
+                    )}
                   </div>
                   <div className='w-1/2'>
                     <label className='text-sm font-medium text-gray-700 mb-2 block'>
-                      AI Score *
+                      AI Score <span className='text-red-500'>*</span>
                     </label>
                     <input
                       type='number'
@@ -244,13 +271,17 @@ const CreatePostModal = ({
                       min='0'
                       max='10'
                     />
-                    {errors.aiScore && <p className='text-red-500 text-xs mt-1'>{errors.aiScore}</p>}
+                    {errors.aiScore && (
+                      <p className='text-red-500 text-xs mt-1'>
+                        {errors.aiScore}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <label className='text-sm font-medium text-gray-700 mb-2 block'>
-                    Post Status *
+                    Post Status <span className='text-red-500'>*</span>
                   </label>
                   <div className='relative'>
                     <select

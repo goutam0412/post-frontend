@@ -15,7 +15,7 @@ export default function DashboardHeader({ title = 'Dashboard', onSearch }) {
   return (
     <div
       className='px-12 py-6 flex items-center justify-between'
-      style={{ background: '#f2f0fe' }}
+      style={{ background: '#f2f0fe', paddingLeft: '32px', paddingRight: '32px' }}
     >
       {/* Title or Search Box */}
       <div className='flex items-center gap-3'>
