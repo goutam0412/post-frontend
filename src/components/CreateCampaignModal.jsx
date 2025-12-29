@@ -147,8 +147,10 @@ const CreateCampaignModal = ({
   if (!showModal) return null;
 
   const fetchUserBusinessProfile = async () => {
-    try { 
-      let userId = 14;
+    try {
+      const userData = localStorage.getItem('userData')
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/business_profiles/${parsedUser.id}`
       );
