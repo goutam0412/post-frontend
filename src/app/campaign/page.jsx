@@ -63,9 +63,11 @@ export default function CampaignsContent() {
           method: 'GET',
       var urlString = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`;
 
-      if (campaignFiler.status !== "All") {
-        urlString += `?status=${campaignFiler.status}`;
+      if (campaignFilter.status !== "All") {
+        urlString += `status=${campaignFilter.status}&`;
       }
+      
+       urlString += `page=${page}&per_page=${perPage}`;
 
       const res = await fetch(
         urlString,
@@ -91,7 +93,7 @@ export default function CampaignsContent() {
     } finally {
       setLoading(false)
     }
-  }, [token , campaignFiler]);
+  }, [token , campaignFilter, page, perPage]);
 
   const handleSearch = (query) => {
     setSearchQuery(query)
@@ -192,8 +194,32 @@ export default function CampaignsContent() {
   return (
     <div className='flex h-screen' style={{ background: '#f2f0fe' }}>
       <SideBar />
-      <div className='flex-1 overflow-auto'>
-        <Header title='My Campaigns' onSearch={handleSearch} />
+      <div className="flex-1 overflow-auto">
+        <Header title="My Campaigns" onSearch={handleSearch} />
+
+        <div className="w-64 pl-8 ">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Filter By Status
+          </label>
+          <select
+            value={campaignFilter.status}
+            onChange={(e) => {
+              setCampaignsFilter((prev) => ({
+                ...prev,
+                status: e.target.value,
+              }));
+              setPage(1)
+            }}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
+                 focus:ring-2 focus:ring-purple-500 focus:outline-none
+                 text-gray-700 "
+          >
+            <option value="All">ALL</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
 
         <div className='p-8'>
           <div className='bg-white shadow-lg'>

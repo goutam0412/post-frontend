@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   FileText,
   BarChart2,
@@ -12,18 +12,34 @@ import {
   Calendar,
   ChevronRight,
   Download,
+  Clock,
+  AlertCircle,
   Plus,
   MoreVertical,
 } from 'lucide-react'
+import axios from "axios";
 import SideBar from '@/components/SideBar'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
+import CreateCampaignModal from "@/components/CreateCampaignModal";
 import Link from 'next/link'
+
+// ---------------------
+const statusMap = {
+  completed: { icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
+  active: { icon: Clock, color: "text-blue-600", bg: "bg-blue-100" },
+  draft: { icon: AlertCircle, color: "text-gray-600", bg: "bg-gray-100" },
+};
+// -----------------
 
 export default function ImpozitionsDashboard() {
   const router = useRouter()
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState([])
+  const [totalCampaignslength,setTotalCampaignslength]=useState();
   const [campaigns, setCampaigns] = useState([])
+  const [filteredCampaigns, setFilteredCampaigns] = useState([]);
   const [searchTerm, setSearchTerm] = useState('')
   const [stats, setStats] = useState({
     totalPosts: 0,
@@ -42,13 +58,13 @@ export default function ImpozitionsDashboard() {
     try {
       const postsJson = localStorage.getItem('social_posts_data')
       const campaignsJson = localStorage.getItem('social_campaigns_data')
-      
+
       const loadedPosts = postsJson ? JSON.parse(postsJson) : []
       const loadedCampaigns = campaignsJson ? JSON.parse(campaignsJson) : []
-      
+
       setPosts(loadedPosts)
       setCampaigns(loadedCampaigns)
-      calculateStats(loadedPosts, loadedCampaigns)
+      calculateStats(loadedPosts)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     }
@@ -57,6 +73,101 @@ export default function ImpozitionsDashboard() {
   const handleSearch = (query) => {
     setSearchTerm(query.toLowerCase())
   }
+
+  //  ----------------
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const fetchCampaigns = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    setLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`, {
+        method: "GET",
+        headers: {
+          token: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      // const campaignsData = data?.campaigns || [];
+      const campaignsData =
+        (data?.campaigns || []).filter(
+          (campaign) => campaign.status === "active"
+        );
+
+        const totalCampaigns = data.campaigns.length;
+        // console.log("length of campaign.....", totalCampaigns)
+        setTotalCampaignslength(totalCampaigns);
+      setCampaigns(campaignsData);
+      setFilteredCampaigns(campaignsData);
+      setStats(prev => ({
+        ...prev,
+        activeCampaigns: campaignsData.length,
+      }));
+
+      console.log("Fetched campaigns:", campaignsData);
+    } catch (err) {
+      console.error("Error fetching campaigns:", err);
+      setCampaigns([]);
+      setFilteredCampaigns([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  //  ----------------
+  const handleSaveCampaign = async (newCampaignData) => {
+    const newCampaign = {
+      name: newCampaignData.campaignName,
+      postTitle: newCampaignData.selectedPost?.title || "",
+      budget: newCampaignData.budget,
+      schedule: newCampaignData.schedule,
+      audience: `${newCampaignData.location}, ${newCampaignData.age}, ${newCampaignData.interests}`,
+      status: newCampaignData.status || "draft",
+      platform: "Facebook/Instagram",
+      createdAt: new Date().toLocaleDateString(),
+    };
+
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`,
+        {
+          campaign: {
+            business_profile_id: newCampaignData.business_profile_id,
+            title: newCampaignData.campaignName,
+            budget: newCampaignData.budget,
+            schedule: newCampaignData.schedule,
+            status: newCampaignData.status,
+            platform: "facebook",
+            // audience: {
+            //   location: newCampaignData.location,
+            //   age: newCampaignData.age,
+            //   interests: newCampaignData.interests,
+            // },
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // fetchCampaigns()
+      console.log("Campaign created:", response.data);
+    } catch (error) {
+      console.error(
+        "Create campaign error:",
+        error.response?.data || error.message
+      );
+    } finally {
+      setShowCreateModal(false);
+    }
+
+  };
 
   const getRecentPosts = () => {
     const filtered = posts.filter((p) =>
@@ -67,8 +178,7 @@ export default function ImpozitionsDashboard() {
   }
   const calculateStats = (postsData, campaignsData) => {
     const totalPosts = postsData.length
-    const activeCampaigns = campaignsData.filter(c => c.status === 'Running').length
-    
+
     const totalReach = postsData.reduce((sum, post) => {
       const views = parseInt(post.views) || Math.floor(Math.random() * 5000) + 500
       return sum + views
@@ -80,16 +190,16 @@ export default function ImpozitionsDashboard() {
       return sum + likes + comments
     }, 0)
 
-    const engagementRate = totalReach > 0 
-      ? ((totalEngagements / totalReach) * 100).toFixed(1) 
+    const engagementRate = totalReach > 0
+      ? ((totalEngagements / totalReach) * 100).toFixed(1)
       : 0
 
-    setStats({
-      totalPosts,
-      activeCampaigns,
-      totalReach: formatNumber(totalReach),
-      engagementRate: `${engagementRate}%`,
-    })
+    setStats((prev) => ({
+    ...prev, 
+    totalPosts,
+    totalReach: formatNumber(totalReach),
+    engagementRate: `${engagementRate}%`,
+  }));
   }
 
   const formatNumber = (num) => {
@@ -115,7 +225,7 @@ export default function ImpozitionsDashboard() {
       <SideBar />
       <div className='flex-1 overflow-auto'>
         <div className='flex items-center justify-between px-12 pt-8'>
-          <Header title='Dashboard' onSearch={handleSearch}/>
+          <Header title='Dashboard' onSearch={handleSearch} />
           <button
             onClick={handleLogout}
             className='text-sm font-medium text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full transition-colors'
@@ -123,7 +233,7 @@ export default function ImpozitionsDashboard() {
             Logout
           </button>
         </div>
-        
+
         <div className='px-12 py-8'>
           {/* Stats Cards */}
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
@@ -221,7 +331,7 @@ export default function ImpozitionsDashboard() {
                     <MetricCard title='Total Impressions' value={stats.totalReach} trend='+12.5%' />
                     <MetricCard title='Total Posts' value={stats.totalPosts} trend='+8.3%' />
                     <MetricCard title='Engagement' value={stats.engagementRate} trend='+15.2%' />
-                    <MetricCard title='Campaigns' value={stats.activeCampaigns} trend='+5.6%' />
+                    <MetricCard title='Campaigns' value={totalCampaignslength} trend='+5.6%' />
                   </div>
                   <div className='bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6'>
                     <h3 className='text-sm font-semibold text-gray-700 mb-4'>Engagement Timeline</h3>
@@ -255,8 +365,8 @@ export default function ImpozitionsDashboard() {
                     </button>
                   </Link>
                 </div>
-                <div className='p-4 space-y-4'>
-                  {campaigns.length > 0 ? (
+                {/* <div className='p-4 space-y-4'>
+                  {campaigns.length < 0 ? (
                     campaigns.slice(0, 3).map((campaign) => (
                       <CampaignCard
                         key={campaign.id}
@@ -265,25 +375,133 @@ export default function ImpozitionsDashboard() {
                         reach={campaign.budget || '0'}
                         status={campaign.status.toLowerCase()}
                         progress={
-                          campaign.status === 'Running' ? 75 : 
-                          campaign.status === 'Scheduled' ? 30 : 0
+                          campaign.status === 'Running' ? 75 :
+                            campaign.status === 'Scheduled' ? 30 : 0
                         }
                       />
                     ))
                   ) : (
                     <div className='p-4 text-center text-gray-500'>
                       <p className='text-sm'>No campaigns yet. Create your first campaign!</p>
-                      <Link href='/campaign'>
-                        <button
-                          className='mt-3 px-4 py-2 text-sm rounded-lg text-white transition-all'
-                          style={{ backgroundColor: '#7c3aed' }}
-                        >
-                          Create Campaign
-                        </button>
-                      </Link>
+                      <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="px-6 py-3 rounded-lg text-white font-medium hover:shadow-lg"
+                        style={{ backgroundColor: "#7c3aed" }}
+                      >
+                        Create Campaign
+                      </button>
                     </div>
                   )}
-                </div>
+                </div> */}
+
+                {/* {(campaigns.length > 0 && campaigns.status=== "active") ? ( */}
+                {(campaigns.length > 0) ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Campaign / Post
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        {filteredCampaigns.slice(0, 5).map((camp) => {
+                          const campStatus =
+                            statusMap[camp.status] || statusMap["draft"];
+                          const StatusIcon = campStatus.icon;
+                          return (
+                            <tr
+                              key={camp.id}
+                              className="hover:bg-purple-50 transition-colors"
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap max-w-sm">
+                                <div className="text-sm font-semibold text-gray-900 truncate">
+                                  {camp.title}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">
+                                  Post: {camp.postTitle}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${campStatus.bg} ${campStatus.color}`}
+                                >
+                                  <StatusIcon className="w-3 h-3 mr-1.5" />
+                                  {camp.status}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className='p-4 text-center text-gray-500'>
+                    <p className='text-sm'>No campaigns yet. Create your first campaign!</p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="px-6 py-3 rounded-lg text-white font-medium hover:shadow-lg"
+                      style={{ backgroundColor: "#7c3aed" }}
+                    >
+                      Create Campaign
+                    </button>
+                  </div>
+                )}
+
+
+                {/* <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Campaign / Post
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {filteredCampaigns.map((camp) => {
+                        const campStatus =
+                          statusMap[camp.status] || statusMap["draft"];
+                        const StatusIcon = campStatus.icon;
+                        return (
+                          <tr
+                            key={camp.id}
+                            className="hover:bg-purple-50 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap max-w-sm">
+                              <div className="text-sm font-semibold text-gray-900 truncate">
+                                {camp.title}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                Post: {camp.postTitle}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${campStatus.bg} ${campStatus.color}`}
+                              >
+                                <StatusIcon className="w-3 h-3 mr-1.5" />
+                                {camp.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div> */}
+
+
+
+
               </div>
 
               {/* Quick Actions */}
@@ -341,6 +559,14 @@ export default function ImpozitionsDashboard() {
           </div>
         </div>
       </div>
+      {showCreateModal && (
+        <CreateCampaignModal
+          onClose={() => setShowCreateModal(false)}
+          onSave={handleSaveCampaign}
+          // campaignData={campaignToEdit}
+          showModal
+        />
+      )}
     </div>
   )
 }
@@ -371,13 +597,12 @@ function PostItem({ title, platform, date, views, likes, comments, status }) {
           <div className='flex items-center gap-2 mb-1'>
             <h3 className='font-semibold text-gray-800'>{title}</h3>
             <span
-              className={`px-2 py-0.5 text-xs rounded-full ${
-                status === 'Active' || status === 'published'
-                  ? 'bg-green-100 text-green-700'
-                  : status === 'Pending'
+              className={`px-2 py-0.5 text-xs rounded-full ${status === 'Active' || status === 'published'
+                ? 'bg-green-100 text-green-700'
+                : status === 'Pending'
                   ? 'bg-yellow-100 text-yellow-700'
                   : 'bg-gray-100 text-gray-700'
-              }`}
+                }`}
             >
               {status}
             </span>
@@ -424,9 +649,8 @@ function CampaignCard({ name, posts, reach, status, progress }) {
           <p className='text-sm text-gray-500'>{posts} • ${reach}</p>
         </div>
         <span
-          className={`px-2 py-1 text-xs rounded-full ${
-            status === 'running' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-          }`}
+          className={`px-2 py-1 text-xs rounded-full ${status === 'running' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+            }`}
         >
           {status}
         </span>
