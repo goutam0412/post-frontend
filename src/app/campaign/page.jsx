@@ -19,6 +19,8 @@ import Header from "@/components/Header";
 import CreateCampaignModal from "@/components/CreateCampaignModal";
 import CampaignPreviewModal from "@/components/CampaignPreviewModal";
 import axios from "axios";
+import FilterDropdown from "@/components/common/FilterDropdown";
+import DeleteModel from "@/components/common/DeleteModel";
 
 const statusMap = {
   completed: { icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
@@ -42,6 +44,8 @@ export default function CampaignsContent() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [showDeleteModel , setshowDeleteModel] = useState(false)
+  const [campaignId, setcampaignId] = useState(null);
 
 
   useEffect(() => {
@@ -172,10 +176,21 @@ export default function CampaignsContent() {
   };
 
   const deleteCampaign = (id) => {
-    if (confirm("Are you sure you want to delete this campaign?")) {
-      const updatedCampaigns = campaigns.filter((camp) => camp.id !== id);
-      setCampaigns(updatedCampaigns);
-      setFilteredCampaigns(updatedCampaigns);
+    try {
+      const response = axios.delete(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns/${campaignId}` , {
+          headers: {
+            token: localStorage.getItem('token')
+          }
+        }
+      );
+
+      
+    } catch (error) {
+
+    } finally {
+      setshowDeleteModel(false)
+      fetchCampaigns()
     }
   };
 
@@ -192,35 +207,35 @@ export default function CampaignsContent() {
     setShowCampaignModal(true);
   };
 
+  const clickDeleteModel = (id)=>{
+     setshowDeleteModel(true)
+     setcampaignId(id)
+
+  }
+
   return (
     <div className="flex h-screen" style={{ background: "#f2f0fe" }}>
       <SideBar />
       <div className="flex-1 overflow-auto">
         <Header title="My Campaigns" onSearch={handleSearch} />
 
-        <div className="w-64 pl-8 ">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filter By Status
-          </label>
-          <select
-            value={campaignFilter.status}
-            onChange={(e) => {
-              setCampaignsFilter((prev) => ({
-                ...prev,
-                status: e.target.value,
-              }));
-              setPage(1)
-            }}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white
-                 focus:ring-2 focus:ring-purple-500 focus:outline-none
-                 text-gray-700 "
-          >
-            <option value="All">ALL</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="completed">Completed</option>
-          </select>
-        </div>
+        <FilterDropdown
+          options={[
+            { label: "All", value: "All" },
+            { label: "Active", value: "active" },
+            { label: "Draft", value: "draft" },
+            { label: "Completed", value: "completed" },
+          ]}
+          onChange={(e) => {
+            setCampaignsFilter((prev) => ({
+              ...prev,
+              status: e,
+            }));
+            setPage(1);
+          }}
+          label={"Filter by status"}
+          className="pl-8"
+        />
 
         <div className="p-8">
           <div className="bg-white shadow-lg">
@@ -352,7 +367,8 @@ export default function CampaignsContent() {
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => deleteCampaign(camp.id)}
+                                // onClick={() => deleteCampaign(camp.id)}
+                                onClick={() => clickDeleteModel(camp.id)}
                                 className="p-2 text-gray-500 hover:text-gray-800"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -368,27 +384,27 @@ export default function CampaignsContent() {
             )}
           </div>
 
-          { (
-            <div className='p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50'>
+          {
+            <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
               {/* <div className='text-sm text-gray-600'>
                 Showing {indexOfFirstItem + 1} to{' '}
                 {Math.min(indexOfLastItem, filteredCampaigns.length)} of{' '}
                 {filteredCampaigns.length} entries
               </div> */}
-              <div className='flex gap-2'>
+              <div className="flex gap-2">
                 <button
                   disabled={page === 1}
                   onClick={() => setPage((prev) => prev - 1)}
                   className={`px-4 py-2 text-sm font-medium rounded-md border ${
                     page === 1
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   Previous
                 </button>
 
-                <div className='flex items-center px-4 text-sm font-semibold text-purple-700'>
+                <div className="flex items-center px-4 text-sm font-semibold text-purple-700">
                   Page {page} of {totalPages || 1}
                 </div>
 
@@ -397,15 +413,15 @@ export default function CampaignsContent() {
                   onClick={() => setPage((prev) => prev + 1)}
                   className={`px-4 py-2 text-sm font-medium rounded-md border ${
                     page === totalPages || totalPages === 0
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   Next
                 </button>
               </div>
             </div>
-          )}
+          }
         </div>
       </div>
 
@@ -424,6 +440,14 @@ export default function CampaignsContent() {
           campaign={previewCampaignData}
         />
       )}
+
+      <DeleteModel
+        show={showDeleteModel}
+        onClose={() => {
+          setshowDeleteModel(false);
+        }}
+        onSubmit={deleteCampaign}
+      />
     </div>
   );
 }
