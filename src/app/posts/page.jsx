@@ -163,15 +163,11 @@ export default function PostsContent() {
     setShowCreateModal(true);
   };
 
-  // if (loading)
-  //   return (
-  //     <div className="flex items-center justify-center h-screen font-bold">
-  //       Loading API Data...
-  //     </div>
-  //   );
+  // if (loading) return <div className='flex items-center justify-center h-screen font-bold'>Loading API Data...</div>
 
   return (
-    <div className="flex h-screen" style={{ background: "#f2f0fe" }}>
+
+    <div className='flex h-screen' style={{ background: '#f2f0fe' }}>
       <SideBar />
       <div className="flex-1 overflow-auto">
         <Header title="My Posts" onSearch={(q) => setSearchQuery(q)} />
@@ -358,8 +354,8 @@ export default function PostsContent() {
         }}
         onSaveSuccess={fetchPosts}
         postToEdit={postToEdit}
-        savePost={savePost} 
-        updatePost={updatePost} 
+        savePost={savePost}
+        updatePost={updatePost}
       />
 
       <PostPreviewModal

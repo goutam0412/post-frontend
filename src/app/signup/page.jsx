@@ -98,7 +98,7 @@ export default function SignUpPage() {
       
       console.log('User created successfully:', data)
       toast.success('Signup successfully')
-      router.push('/Dashboard')
+      router.push('/dashboard')
     }else {
       if (data.errors) {
         setFieldErrors(data.errors) 
