@@ -209,7 +209,7 @@ export default function PostsContent() {
             </div>
             {loading ? (
               <div className="p-12 text-center">Loading campaigns...</div>
-            ) : posts.length === 0 ? (
+             ) : posts.length === 0 ? (
               <div className="p-12 text-center">
                 <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
@@ -226,7 +226,7 @@ export default function PostsContent() {
                   Create Campaign
                 </button>
               </div>
-            ) : (
+             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">

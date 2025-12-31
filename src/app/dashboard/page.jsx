@@ -22,8 +22,9 @@ import SideBar from '@/components/SideBar'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import CreateCampaignModal from "@/components/CreateCampaignModal";
+import CreatePostModal from '@/components/CreatePostModal'
 import Link from 'next/link'
-
+import toast from 'react-hot-toast'
 // ---------------------
 const statusMap = {
   completed: { icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
@@ -34,13 +35,21 @@ const statusMap = {
 
 export default function ImpozitionsDashboard() {
   const router = useRouter()
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
+
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState([])
-  const [totalCampaignslength,setTotalCampaignslength]=useState();
+  const [totalCampaignslength, setTotalCampaignslength] = useState();
+  const [totalPostslength, setTotalPostslength] = useState();
   const [campaigns, setCampaigns] = useState([])
   const [filteredCampaigns, setFilteredCampaigns] = useState([]);
   const [searchTerm, setSearchTerm] = useState('')
+  const [error, setError] = useState(null)
+  const [filteredPosts, setFilteredPosts] = useState([])
+  const currentItems = filteredPosts.slice(0, 3)
+  const [recentCampaigns, setRecentCampaigns] = useState([]);
+
   const [stats, setStats] = useState({
     totalPosts: 0,
     activeCampaigns: 0,
@@ -62,22 +71,149 @@ export default function ImpozitionsDashboard() {
       const loadedPosts = postsJson ? JSON.parse(postsJson) : []
       const loadedCampaigns = campaignsJson ? JSON.parse(campaignsJson) : []
 
-      setPosts(loadedPosts)
-      setCampaigns(loadedCampaigns)
+      // setPosts(loadedPosts)
+      // setCampaigns(loadedCampaigns)
       calculateStats(loadedPosts)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     }
   }
 
+
   const handleSearch = (query) => {
     setSearchTerm(query.toLowerCase())
   }
+
+  const fetchRecentPosts = async () => {
+    try {
+      const token = localStorage.getItem('token')
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts`,
+        {
+          headers: {
+            Accept: 'application/json',
+            token: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!res.ok) throw new Error('Fetch failed')
+
+      const data = await res.json()
+
+      const formatted = (data.posts || [])
+        .slice(-4) // only recent 2
+        .map(post => ({
+          id: post.id,
+          title: post.caption || 'No Caption',
+          description: post.hashtags || 'No Hashtags',
+          createdAt: post.created_at,
+          campaign_id: post.campaign_id,
+          ai_score: post.ai_score ?? 0,
+        }))
+
+
+      const totalPosts = data.posts.length;
+      // console.log("length of total posts.....", totalPosts)
+      console.log("total post data ", formatted)
+      setTotalPostslength(totalPosts);
+      setPosts(formatted)
+
+    } catch (err) {
+      console.error('Dashboard fetch error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRecentPosts()
+  }, [])
+
+
+  const savePost = async (postData) => {
+    console.log('savePost called');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'token': `Bearer ${token}`
+        },
+        body: JSON.stringify({ post: postData }),
+      });
+      console.log("token", token)
+
+      if (response.ok) {
+        fetchRecentPosts();
+        toast.success('Post Created Successfully!');
+        setShowPostModal(false);
+      } else {
+        const errorText = await response.text();
+        console.error('Full Server Error:', errorText);
+        toast.error('Server Error!');
+      }
+    } catch (err) {
+      console.error('Network Error:', err);
+      toast.error('Network Error! Could not save the post.')
+
+    }
+  };
 
   //  ----------------
   useEffect(() => {
     fetchCampaigns();
   }, []);
+
+  // const fetchCampaigns = useCallback(async () => {
+  //   const token = localStorage.getItem("token");
+  //   setLoading(true);
+  //   try {
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/campaigns`, {
+  //       method: "GET",
+  //       headers: {
+  //         token: `Bearer ${token}`,
+  //       },
+  //     });
+  //     if (!res.ok) {
+  //       throw new Error(`HTTP error! status: ${res.status}`);
+  //     }
+  //     const data = await res.json();
+
+  //     //this is for active campaigns
+  //     const campaignsData =
+  //       (data?.campaigns || []).filter(
+  //         (campaign) => campaign.status === "active"
+  //       );
+  //     // this is for all campaigns
+  //     const campaignsArray = Array.isArray(data?.campaigns)
+  //       ? data.campaigns
+  //       : [];
+  //     //this is for count for campaigns
+  //     const totalCampaigns = campaignsArray.length;
+  //     //this is for recent last 2 campaigns
+
+  //     setTotalCampaignslength(totalCampaigns);
+  //     setCampaigns(campaignsData);
+  //     // setCampaigns(recentCampaigns);
+  //     setFilteredCampaigns(campaignsData);
+  //     setStats(prev => ({
+  //       ...prev,
+  //       activeCampaigns: campaignsData.length,
+  //     }));
+
+  //   } catch (err) {
+  //     console.error("Error fetching campaigns:", err);
+  //     setCampaigns([]);
+  //     setFilteredCampaigns([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
 
   const fetchCampaigns = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -93,23 +229,41 @@ export default function ImpozitionsDashboard() {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       const data = await res.json();
-      // const campaignsData = data?.campaigns || [];
+
+      //this is for active campaigns
       const campaignsData =
         (data?.campaigns || []).filter(
           (campaign) => campaign.status === "active"
         );
 
-        const totalCampaigns = data.campaigns.length;
-        // console.log("length of campaign.....", totalCampaigns)
-        setTotalCampaignslength(totalCampaigns);
+      // this is for all campaigns
+      const campaignsArray = Array.isArray(data?.campaigns)
+        ? data.campaigns
+        : [];
+      //this is for count for campaigns
+      const totalCampaigns = campaignsArray.length;
+      //this is for recent last 2 campaigns
+      const recent = campaignsArray
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 2)
+        .map((campaign) => ({
+          id: campaign.id,
+          title: campaign.title,
+          budget: campaign.budget,
+          status: campaign.status,
+          createdAt: campaign.created_at,
+        }));
+
+
+      setTotalCampaignslength(totalCampaigns);
       setCampaigns(campaignsData);
       setFilteredCampaigns(campaignsData);
+      setRecentCampaigns(recent);
       setStats(prev => ({
         ...prev,
         activeCampaigns: campaignsData.length,
       }));
 
-      console.log("Fetched campaigns:", campaignsData);
     } catch (err) {
       console.error("Error fetching campaigns:", err);
       setCampaigns([]);
@@ -164,7 +318,7 @@ export default function ImpozitionsDashboard() {
         error.response?.data || error.message
       );
     } finally {
-      setShowCreateModal(false);
+      setShowCampaignModal(false);
     }
 
   };
@@ -195,11 +349,11 @@ export default function ImpozitionsDashboard() {
       : 0
 
     setStats((prev) => ({
-    ...prev, 
-    totalPosts,
-    totalReach: formatNumber(totalReach),
-    engagementRate: `${engagementRate}%`,
-  }));
+      ...prev,
+      totalPosts,
+      totalReach: formatNumber(totalReach),
+      engagementRate: `${engagementRate}%`,
+    }));
   }
 
   const formatNumber = (num) => {
@@ -208,15 +362,15 @@ export default function ImpozitionsDashboard() {
     return num.toString()
   }
 
-  const handleLogout = async () => {
-    try {
-      localStorage.removeItem("token");
-      router.push('/Login')
-    } catch (error) {
-      console.error("Error during logout:", error);
-      alert("Logout error");
-    }
-  };
+  // const handleLogout = async () => {
+  //   try {
+  //     localStorage.removeItem("token");
+  //     router.push('/Login')
+  //   } catch (error) {
+  //     console.error("Error during logout:", error);
+  //     alert("Logout error");
+  //   }
+  // };
 
   // const getRecentPosts = () => posts.sort((a, b) => b.id - a.id).slice(0, 2)
 
@@ -226,12 +380,12 @@ export default function ImpozitionsDashboard() {
       <div className='flex-1 overflow-auto'>
         <div className='flex items-center justify-between px-12 pt-8'>
           <Header title='Dashboard' onSearch={handleSearch} />
-          <button
+          {/* <button
             onClick={handleLogout}
             className='text-sm font-medium text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full transition-colors'
           >
             Logout
-          </button>
+          </button> */}
         </div>
 
         <div className='px-12 py-8'>
@@ -239,7 +393,7 @@ export default function ImpozitionsDashboard() {
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
             <StatsCard
               title='Total Posts'
-              value={stats.totalPosts}
+              value={totalPostslength}
               change='+12%'
               icon={<FileText className='w-6 h-6 text-indigo-600' />}
               bgColor='bg-indigo-50'
@@ -270,40 +424,70 @@ export default function ImpozitionsDashboard() {
           <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
             <div className='lg:col-span-2 space-y-6'>
               {/* Recent Posts */}
-              <div className='bg-white shadow-sm'>
-                <div className='p-6 flex items-center justify-between'>
+              {/* <div className='bg-white shadow-sm'> */}
+              <div className="bg-white rounded-xl border border-gray-200">
+
+
+                <div className="px-6 py-5 flex items-center justify-between ">
+
                   <h2 className='text-xl font-semibold text-gray-800'>Recent Posts</h2>
-                  <Link href='/posts'>
-                    <button
-                      className='px-4 py-2 hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm'
-                      style={{ backgroundColor: '#bbb5ed', color: 'black' }}
-                    >
-                      <Plus className='w-4 h-4' />
-                      New Post
-                    </button>
-                  </Link>
+                  <button
+                    onClick={() => { setShowPostModal(true); }}
+                    className='flex items-center gap-2 px-4 py-2.5 bg-[#bbb5ed] text-black font-semibold hover:shadow-lg transition-all'
+                  >
+                    <Plus className='w-5 h-5' /> New Post
+                  </button>
                 </div>
-                <div className='divide-y'>
-                  {getRecentPosts().length > 0 ? (
-                    getRecentPosts().map((post) => (
-                      <PostItem
+
+                {loading ? <div className="p-12 text-center">Loading Post...</div> :
+                  <div className="grid grid-cols-2 gap-5 px-6 pt-4 pb-6">
+
+
+
+                    {posts.length === 0 && (
+                      <div className="col-span-4 text-center text-gray-400 py-6">
+                        No recent posts
+                      </div>
+                    )}
+
+                    {posts.map((post) => (
+                      <div
                         key={post.id}
-                        title={post.title}
-                        platform={post.platform || 'Draft'}
-                        date={post.createdAt || 'Recently'}
-                        views={post.views || Math.floor(Math.random() * 5000) + 500}
-                        likes={post.likes || Math.floor(Math.random() * 200) + 10}
-                        comments={post.comments || Math.floor(Math.random() * 50) + 5}
-                        status={post.status || 'Draft'}
-                      />
-                    ))
-                  ) : (
-                    <div className='p-8 text-center text-gray-500'>
-                      <p>No posts yet. Create your first post!</p>
-                    </div>
-                  )}
-                </div>
-                <div className='p-4 bg-gray-50 rounded-b-xl'>
+                        className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
+
+                      >
+                        <h3 className="font-semibold text-gray-800 truncate">
+                          {post.title}
+                        </h3>
+
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          {post.description}
+                        </p>
+
+                        <div className="flex items-center justify-between mt-4 text-sm">
+                          <span className="text-gray-600">
+                            Campaign:{' '}
+                            <span className="text-gray-400">#</span>
+                            <b className="text-gray-700">{post.campaign_id}</b>
+                          </span>
+
+                          <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">
+                            AI {post.ai_score}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-xs text-gray-400 mt-3">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {post.createdAt
+                            ? new Date(post.createdAt).toLocaleDateString()
+                            : '—'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                }
+                <div className="px-6 py-4  bg-gray-50 rounded-b-xl">
+
                   <Link href='/posts'>
                     <button className='text-indigo-600 text-sm font-medium hover:text-indigo-700 flex items-center gap-1'>
                       View All Posts
@@ -329,7 +513,7 @@ export default function ImpozitionsDashboard() {
                 <div className='p-6'>
                   <div className='grid grid-cols-2 gap-6 mb-6'>
                     <MetricCard title='Total Impressions' value={stats.totalReach} trend='+12.5%' />
-                    <MetricCard title='Total Posts' value={stats.totalPosts} trend='+8.3%' />
+                    <MetricCard title='Total Posts' value={totalPostslength} trend='+8.3%' />
                     <MetricCard title='Engagement' value={stats.engagementRate} trend='+15.2%' />
                     <MetricCard title='Campaigns' value={totalCampaignslength} trend='+5.6%' />
                   </div>
@@ -365,36 +549,7 @@ export default function ImpozitionsDashboard() {
                     </button>
                   </Link>
                 </div>
-                {/* <div className='p-4 space-y-4'>
-                  {campaigns.length < 0 ? (
-                    campaigns.slice(0, 3).map((campaign) => (
-                      <CampaignCard
-                        key={campaign.id}
-                        name={campaign.name}
-                        posts={campaign.postTitle || 'N/A'}
-                        reach={campaign.budget || '0'}
-                        status={campaign.status.toLowerCase()}
-                        progress={
-                          campaign.status === 'Running' ? 75 :
-                            campaign.status === 'Scheduled' ? 30 : 0
-                        }
-                      />
-                    ))
-                  ) : (
-                    <div className='p-4 text-center text-gray-500'>
-                      <p className='text-sm'>No campaigns yet. Create your first campaign!</p>
-                      <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="px-6 py-3 rounded-lg text-white font-medium hover:shadow-lg"
-                        style={{ backgroundColor: "#7c3aed" }}
-                      >
-                        Create Campaign
-                      </button>
-                    </div>
-                  )}
-                </div> */}
 
-                {/* {(campaigns.length > 0 && campaigns.status=== "active") ? ( */}
                 {(campaigns.length > 0) ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -442,9 +597,9 @@ export default function ImpozitionsDashboard() {
                   </div>
                 ) : (
                   <div className='p-4 text-center text-gray-500'>
-                    <p className='text-sm'>No campaigns yet. Create your first campaign!</p>
+                    <p className='text-sm'>No campaigns yet. Create your first campaign!</p><br />
                     <button
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={() => setShowCampaignModal(true)}
                       className="px-6 py-3 rounded-lg text-white font-medium hover:shadow-lg"
                       style={{ backgroundColor: "#7c3aed" }}
                     >
@@ -452,56 +607,6 @@ export default function ImpozitionsDashboard() {
                     </button>
                   </div>
                 )}
-
-
-                {/* <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Campaign / Post
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-100">
-                      {filteredCampaigns.map((camp) => {
-                        const campStatus =
-                          statusMap[camp.status] || statusMap["draft"];
-                        const StatusIcon = campStatus.icon;
-                        return (
-                          <tr
-                            key={camp.id}
-                            className="hover:bg-purple-50 transition-colors"
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap max-w-sm">
-                              <div className="text-sm font-semibold text-gray-900 truncate">
-                                {camp.title}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate">
-                                Post: {camp.postTitle}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span
-                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${campStatus.bg} ${campStatus.color}`}
-                              >
-                                <StatusIcon className="w-3 h-3 mr-1.5" />
-                                {camp.status}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div> */}
-
-
-
-
               </div>
 
               {/* Quick Actions */}
@@ -521,11 +626,11 @@ export default function ImpozitionsDashboard() {
           </div>
 
           {/* Recent Activity */}
-          <div className='bg-white shadow-sm mt-6'>
+          {/* <div className='bg-white shadow-sm mt-6'>
             <div className='p-6'>
               <h2 className='text-xl font-semibold text-gray-800'>Recent Activity</h2>
             </div>
-            <div className='divide-y'>
+            <div>
               {[
                 ...posts.slice(0, 2).map((post) => ({
                   action: `Post ${post.status || 'created'}`,
@@ -534,7 +639,7 @@ export default function ImpozitionsDashboard() {
                   icon: <FileText className='w-5 h-5 text-indigo-600' />,
                   key: `post-${post.id}`
                 })),
-                ...campaigns.slice(0, 1).map((campaign) => ({
+                ...campaigns.slice(0, 2).map((campaign) => ({
                   action: `Campaign ${campaign.status}`,
                   description: `${campaign.name} with budget ${campaign.budget}`,
                   time: campaign.createdAt || 'Recently',
@@ -556,17 +661,95 @@ export default function ImpozitionsDashboard() {
                 </div>
               )}
             </div>
+          </div> */}
+
+          <div className="bg-white shadow-sm mt-6 rounded-xl">
+            {/* Header */}
+            <div className="px-6 py-5">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Recent Activity
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+
+              {/* POSTS COLUMN */}
+              <div>
+                <h3 className="text-sm font-semibold text-indigo-600 mb-4">
+                  📝 Posts
+                </h3>
+
+                <div className="space-y-4">
+                  {posts.slice(-2).map((post) => (
+                    <ActivityItem
+                      key={`post-${post.id}`}
+                      action={`Post ${post.status || 'created'}`}
+                      description={`${post.title} on ${post.platform || 'platform'}`}
+                      time={post.createdAt || 'Recently'}
+                      icon={<FileText className="w-5 h-5 text-indigo-600" />}
+                    />
+                  ))}
+
+                  {posts.length === 0 && (
+                    <p className="text-sm text-gray-400">
+                      No recent posts
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* CAMPAIGNS COLUMN */}
+              <div>
+                <h3 className="text-sm font-semibold text-pink-600 mb-4">
+                  📣 Campaigns
+                </h3>
+
+                <div className="space-y-4">
+                  {recentCampaigns.slice(-2).map((campaign) => (
+                    <ActivityItem
+                      key={`campaign-${campaign.id}`}
+                      action={`Campaign ${campaign.status}`}
+                      description={`${campaign.title} • Budget ₹${campaign.budget}`}
+                      time={
+                        campaign.createdAt
+                          ? new Date(campaign.createdAt).toLocaleString()
+                          : "Recently"
+                      }
+                      icon={<Megaphone className="w-5 h-5 text-pink-600" />}
+                    />
+                  ))}
+
+                  {recentCampaigns.length === 0 && (
+                    <p className="text-sm text-gray-400">
+                      No recent campaigns
+                    </p>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
+
+
         </div>
       </div>
-      {showCreateModal && (
+      {showCampaignModal && (
         <CreateCampaignModal
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => setShowCampaignModal(false)}
           onSave={handleSaveCampaign}
           // campaignData={campaignToEdit}
           showModal
         />
       )}
+      <CreatePostModal
+        showModal={showPostModal}
+        closeModal={() => { setShowPostModal(false); }}
+        onSaveSuccess={fetchRecentPosts}
+        // postToEdit={postToEdit}
+        savePost={savePost}
+      // updatePost={updatePost}
+      />
     </div>
   )
 }
