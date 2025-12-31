@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 import SideBar from '@/components/SideBar'
 import Header from '@/components/Header'
+import { useRouter } from 'next/navigation'
+
 import {
   User,
   Mail,
@@ -29,6 +31,17 @@ export default function SettingsPage() {
   const [pushNotifications, setPushNotifications] = useState(true)
   const [marketingEmails, setMarketingEmails] = useState(false)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      localStorage.removeItem("token");
+      router.push('/login')
+    } catch (error) {
+      console.error("Error during logout:", error);
+      alert("Logout error");
+    }
+  };
 
   const sections = [
     { id: 'profile', label: 'Profile', icon: <User className='w-5 h-5' /> },
@@ -48,12 +61,18 @@ export default function SettingsPage() {
       label: 'Billing',
       icon: <CreditCard className='w-5 h-5' />,
     },
+    {
+      id: 'logout',
+      label: 'Logout',
+      icon: <LogOut className='w-5 h-5 text-red-600' />,
+      onClick: handleLogout,
+    },
   ]
 
   return (
     <div className='flex h-screen' style={{ background: '#f2f0fe' }}>
       <SideBar />
-      
+
       <div className='flex-1 overflow-auto'>
         <Header title='Settings' />
 
@@ -69,12 +88,18 @@ export default function SettingsPage() {
                   {sections.map((section) => (
                     <button
                       key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        activeSection === section.id
-                          ? 'bg-indigo-50 text-indigo-700'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
+                      onClick={() => {
+                        if (section.id === 'logout') {
+                          section.onClick()
+                        } else {
+                          setActiveSection(section.id)
+                        }
+                      }}
+
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeSection === section.id
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                     >
                       {section.icon}
                       {section.label}
@@ -279,11 +304,10 @@ export default function SettingsPage() {
                             </div>
                           </div>
                           <button
-                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                              account.connected
-                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                            }`}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${account.connected
+                              ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                              }`}
                           >
                             {account.connected ? 'Disconnect' : 'Connect'}
                           </button>
@@ -397,6 +421,10 @@ export default function SettingsPage() {
                   </p>
                 </div>
               )}
+              {/* {
+                 
+                    (onClick={handleLogout})
+              } */}
             </div>
           </div>
         </div>
@@ -414,14 +442,12 @@ function NotificationToggle({ title, description, enabled, onChange }) {
       </div>
       <button
         onClick={() => onChange(!enabled)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-4 flex-shrink-0 ${
-          enabled ? 'bg-indigo-600' : 'bg-gray-200'
-        }`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-4 flex-shrink-0 ${enabled ? 'bg-indigo-600' : 'bg-gray-200'
+          }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            enabled ? 'translate-x-6' : 'translate-x-1'
-          }`}
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
         />
       </button>
     </div>
